@@ -19,7 +19,7 @@ module wav_import_export
   use wav_shr_mod  , only : chkerr
   use wav_shr_mod  , only : state_diagnose, state_reset, state_getfldptr, state_fldchk
   use wav_shr_mod  , only : wav_coupling_to_cice, merge_import, dbug_flag, multigrid
-  use constants    , only : grav, tpi, dwat
+  use constants    , only : grav, tpi, dwat, dair
 
   implicit none
   private ! except
@@ -138,6 +138,7 @@ contains
     call fldlist_add(fldsFrWav_num, fldsFrWav, trim(flds_scalar_name))
     if (cesmcoupled) then
        call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult' )
+       call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_lasl' )
        call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_ustokes')
        call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_vstokes')
       !call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_hstokes')
@@ -592,7 +593,9 @@ contains
     use w3gdatmd      , only : nseal, mapsf, MAPSTA, USSPF, NK, w3setg
     use w3iogomd      , only : CALC_U3STOKES
 #ifdef W3_CESMCOUPLED
-    use w3adatmd      , only : LAMULT
+    use w3wdatmd      , only : ASF, UST
+    use w3adatmd      , only : USSXH, USSYH, UD, HS
+    use w3idatmd      , only : HSL
 #else
     use wmmdatmd      , only : mdse, mdst, wmsetm
 #endif
@@ -603,6 +606,9 @@ contains
 
     ! Local variables
     real(R8)          :: fillvalue = 1.0e30_R8                 ! special missing value
+#ifdef W3_CESMCOUPLED
+    real(R8)          :: sww, laslpj, alphal
+#endif
     type(ESMF_State)  :: exportState
     integer           :: n, jsea, isea, ix, iy, lsize, ib
 
@@ -618,6 +624,7 @@ contains
     real(r8), pointer :: syyn(:)
 
     real(r8), pointer :: sw_lamult(:)
+    real(r8), pointer :: sw_lasl(:)
     real(r8), pointer :: sw_ustokes(:)
     real(r8), pointer :: sw_vstokes(:)
     real(r8), pointer :: wav_tauice1(:)
@@ -664,9 +671,42 @@ contains
           ix  = mapsf(isea,1)
           iy  = mapsf(isea,2)
           if (mapsta(iy,ix) == 1) then
-             sw_lamult(jsea) = LAMULT(jsea)
+             sww = atan2(USSYH(jsea),USSXH(jsea)) - UD(isea)
+             alphal = atan( sin(sww) / (                                       &
+                            2.5 * UST(isea)*ASF(isea)*sqrt(dair/dwat)          &
+                          / max(1.e-14, sqrt(USSX(jsea)**2+USSY(jsea)**2))     &
+                          * log(max(1.0, abs(1.25*HSL(ix,iy)/HS(jsea))))       &
+                          + cos(sww)   )                                       &
+                          )
+             ! note: an arbitrary minimum value of 0.2 is set to avoid zero
+             !       Langmuir number which may result from zero surface friction
+             !       velocity but may cause unphysically strong Langmuir mixing
+             laslpj = max( 0.2, sqrt( UST(isea)*ASF(isea)*sqrt(dair/dwat)      &
+                    / max(1.e-14, sqrt(USSXH(jsea)**2+USSYH(jsea)**2)) )       &
+                    * sqrt(abs(cos(alphal))/abs(cos(sww-alphal))) )
+             sw_lamult(jsea) = abs(cos(alphal)) *                              &
+                               sqrt(1.0+(1.5*laslpj)**(-2)+(5.4*laslpj)**(-4))
           else
              sw_lamult(jsea)  = 1.
+          endif
+       enddo
+    end if
+    if (state_fldchk(exportState, 'Sw_lasl')) then
+       call state_getfldptr(exportState, 'Sw_lasl', sw_lasl, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       sw_lasl(:) = fillvalue
+       do jsea=1, nseal
+          isea = iaproc + (jsea-1)*naproc
+          ix  = mapsf(isea,1)
+          iy  = mapsf(isea,2)
+          if (mapsta(iy,ix) == 1) then
+             ! note: an arbitrary minimum value of 0.2 is set to avoid zero
+             !       Langmuir number which may result from zero surface friction
+             !       velocity but may cause unphysically strong Langmuir mixing
+             sw_lasl(jsea) = max(0.2, sqrt(UST(isea)*ASF(isea)*sqrt(dair/dwat) &
+                           / max(1.e-14, sqrt(USSXH(jsea)**2+USSYH(jsea)**2))))
+          else
+             sw_lasl(jsea)  = 1.e6
           endif
        enddo
     end if

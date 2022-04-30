@@ -1221,20 +1221,10 @@
       USE W3ADATMD, ONLY: NSEALM
 #ifdef W3_CESMCOUPLED
       ! USSXH, USSYH : surface layer (SL) averaged SD
-      ! LANGMT       : La_t
-      ! LAPROJ       : La_{Proj}
-      ! LASL         : La_{SL}
-      ! LASLPJ       : La_{SL,Proj}
-      ! ALPHAL       : angle between wind and Langmuir cells (SL averaged)
-      ! ALPHALS      : angle between wind and Langmuir cells (surface)
-      ! UD           : wind direction
-      ! LAMULT       : enhancement factor
       ! HSL          : surface layer depth (1/5 of the mixed layer depth
       !                from the coupler)
-      USE W3ADATMD, ONLY: LAMULT, USSXH, USSYH, LANGMT, LAPROJ, &
-                          ALPHAL, ALPHALS, LASL, UD, LASLPJ
+      USE W3ADATMD, ONLY: USSXH, USSYH
       USE W3IDATMD, ONLY: HSL
-      USE W3WDATMD, ONLY: ASF
 #endif
 #ifdef W3_S
       USE W3SERVMD, ONLY: STRACE
@@ -1426,17 +1416,8 @@
       ETUSCX  = 0.
       ETUSCY  = 0.
 #ifdef W3_CESMCOUPLED
-      LANGMT = UNDEF
-      LAPROJ = UNDEF
-      LASL   = UNDEF
-      LASLPJ = UNDEF
-      ALPHAL = UNDEF
-      ALPHALS = UNDEF
-      USSX   = 0.
-      USSY   = 0.
       USSXH  = 0.
       USSYH  = 0.
-      LAMULT  = 1.
 #endif
 !
 ! 2.  Integral over discrete part of spectrum ------------------------ *
@@ -2051,82 +2032,6 @@
               T02(JSEA) = TPI / SIG(NK)
               T01(JSEA)= T02(JSEA)
               ENDIF
-#ifdef W3_CESMCOUPLED
-            !TODO is this affected by the NXXX vs. NSEALM?
-            ! Should LAMULT, etc. be NSEAML length?
-            ! Output Stokes drift and Langmuir numbers
-            ! USERO(JSEA,1) = HS(JSEA) / MAX ( 0.001 , DW(JSEA) )
-            ! USERO(JSEA,2) = ASF(ISEA)
-            IF (USSX(JSEA) .NE. 0. .OR. USSY(JSEA) .NE. 0.) THEN
-
-               ! this check is to divide by zeror error with gx17
-               ! is there a better way to do this check?
-               IF( SQRT(USSX(JSEA)**2 + USSY(JSEA)**2) .GT. 0) THEN
-                  IF( SQRT(USSXH(JSEA)**2+USSYH(JSEA)**2) .GT. 0) THEN
-
-                     LANGMT(JSEA) = SQRT ( UST(ISEA) * ASF(ISEA)        &
-                          * SQRT ( DAIR / DWAT )                   &
-                          / SQRT ( USSX(JSEA)**2 + USSY(JSEA)**2 ) )
-                     ! Calculating Langmuir Number for misaligned wind and waves
-                     ! see Van Roekel et al., 2012
-                     ! take z1 = 4 * HS
-                     ! SWW: angle between Stokes drift and wind
-
-                     ! no Stokes depth
-                     SWW = ATAN2(USSY(JSEA),USSX(JSEA)) - UD(ISEA)
-                     ! ALPHALS: angle between wind and LC direction, Surface
-                     ! Stokes drift
-                     ! LR check for divide by zero
-                     if ((LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
-                        print *, 'LR warning A denom 0.'
-                        ! This appears to be a decimal precision error
-                        ! The first term equals minus the second term to 6 decimal places
-                        ! The denominator should be a very small number (e-7)
-                        ! ATAN(sin(sww)/small number) tends to pi/2
-                        ! So I hardcoded this here.
-                        ALPHALS(JSEA) = -1.5707956594501575
-                     else
-
-                        ALPHALS(JSEA) = ATAN(SIN(SWW) / (LANGMT(JSEA)**2  &
-                             /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
-                     end if
-
-
-                     ALPHALS(JSEA) = ATAN( SIN(SWW) / ( LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
-                     LAPROJ(JSEA) = LANGMT(JSEA) &
-                          * SQRT(ABS(COS(ALPHALS(JSEA))) &
-                          / ABS(COS(SWW-ALPHALS(JSEA))))
-                     ! Stokes depth
-                     SWW = ATAN2(USSYH(JSEA),USSXH(JSEA)) - UD(ISEA)
-                     ! ALPHAL: angle between wind and LC direction
-
-                     ! LR check for divide by zero (same as above)
-                     if ((LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
-                        print *, 'LR warning B denom 0.'
-                        ALPHAL(JSEA) = -1.5707956594501575
-                     else
-
-                        ALPHAL(JSEA) = ATAN(SIN(SWW) / (LANGMT(JSEA)**2  &
-                             /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
-                     end if
-                     LASL(JSEA) = SQRT(UST(ISEA)*ASF(ISEA)         &
-                          * SQRT(DAIR/DWAT)                       &
-                          / SQRT(USSXH(JSEA)**2+USSYH(JSEA)**2))
-                     LASLPJ(JSEA) = LASL(JSEA) * SQRT(ABS(COS(ALPHAL(JSEA))) &
-                          / ABS(COS(SWW-ALPHAL(JSEA))))
-                     ! LAMULT
-                     LAMULT(JSEA) = MIN(5.0, ABS(COS(ALPHAL(JSEA))) * &
-                          SQRT(1.0+(1.5*LASLPJ(JSEA))**(-2)+(5.4*real(LASLPJ(JSEA),kind=8))**(-4)))
-                     ! user defined output
-                     ! USERO(JSEA,1) = HSL(IX,IY)
-                     ! USERO(JSEA,2) = COS(ALPHAL(JSEA)
-                  END IF
-               END IF
-            END IF
-#endif
 !
 !  Add here USERO(JSEA,1) ...
 !

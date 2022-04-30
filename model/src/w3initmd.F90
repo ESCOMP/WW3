@@ -2476,8 +2476,7 @@
 #endif
 
 #ifdef W3_CESMCOUPLED
-      USE W3ADATMD, ONLY: LANGMT, LAPROJ, ALPHAL, LASL, LASLPJ,  &
-                          ALPHALS, LAMULT
+      USE W3ADATMD, ONLY: USSXH, USSYH
 #endif
 
 #ifdef W3_MPI

@@ -473,9 +473,7 @@
         REAL, POINTER         :: XUSERO(:,:)
 #ifdef W3_CESMCOUPLED
         ! Output fileds for Langmuir mixing in group
-        REAL, POINTER         :: LANGMT(:), LAPROJ(:), LASL(:),       &
-                                 LASLPJ(:), LAMULT(:), ALPHAL(:),     &
-                                 ALPHALS(:), USSXH(:), USSYH(:)
+        REAL, POINTER         :: USSXH(:), USSYH(:)
 #endif
 !
 ! Spatial derivatives
@@ -558,9 +556,7 @@
 !/ Data aliases for structure WADAT(S)
 !/
 #ifdef W3_CESMCOUPLED
-     REAL, POINTER           :: LANGMT(:), LAPROJ(:), ALPHAL(:),      &
-                                ALPHALS(:), LAMULT(:), LASL(:),       &
-                                LASLPJ(:), USSXH(:), USSYH(:)
+     REAL, POINTER            :: USSXH(:), USSYH(:)
 #endif
       REAL, POINTER           :: CG(:,:), WN(:,:)
       REAL, POINTER           :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
@@ -1045,13 +1041,6 @@
 #ifdef W3_CESMCOUPLED
       ALLOCATE ( WADATS(IMOD)%USSXH(NSEALM)   , &
                  WADATS(IMOD)%USSYH(NSEALM)   , &
-                 WADATS(IMOD)%LANGMT(NSEALM)  , &
-                 WADATS(IMOD)%LAPROJ(NSEALM)  , &
-                 WADATS(IMOD)%LASL(NSEALM)    , &
-                 WADATS(IMOD)%LASLPJ(NSEALM)  , &
-                 WADATS(IMOD)%ALPHAL(NSEALM)  , &
-                 WADATS(IMOD)%ALPHALS(NSEALM) , &
-                 WADATS(IMOD)%LAMULT(NSEALM)  , &
                  STAT=ISTAT )
       CHECK_ALLOC_STATUS ( ISTAT )
 #endif
@@ -1542,7 +1531,7 @@
 ! 5.  Restore previous grid setting if necessary
 !
       IF ( JGRID .NE. IMOD ) CALL W3SETG ( JGRID, NDSE, NDST )
- 
+
 #ifdef W3_MEMCHECK
        WRITE(740+IAPROC,*) 'memcheck_____:', 'W3DIMA END'
        call getMallocInfo(mallinfos)
@@ -2987,16 +2976,8 @@
 !
           WN     => WADATS(IMOD)%WN
 #ifdef W3_CESMCOUPLED
-          ! USSX and USSY are already set
-          LANGMT => WADATS(IMOD)%LANGMT
-          LAPROJ => WADATS(IMOD)%LAPROJ
-          LASL   => WADATS(IMOD)%LASL
-          LASLPJ => WADATS(IMOD)%LASLPJ
-          ALPHAL => WADATS(IMOD)%ALPHAL
-          ALPHALS=> WADATS(IMOD)%ALPHALS
           USSXH  => WADATS(IMOD)%USSXH
           USSYH  => WADATS(IMOD)%USSYH
-          LAMULT => WADATS(IMOD)%LAMULT
 #endif
 #ifdef W3_IC3
      IC3WN_R=> WADATS(IMOD)%IC3WN_R
