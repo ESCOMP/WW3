@@ -1220,7 +1220,6 @@
                           NOGRP, NGRPP
       USE W3ADATMD, ONLY: NSEALM
 #ifdef W3_CESMCOUPLED
-      ! USSX, USSY   : surface Stokes drift (SD)
       ! USSXH, USSYH : surface layer (SL) averaged SD
       ! LANGMT       : La_t
       ! LAPROJ       : La_{Proj}
@@ -1300,11 +1299,8 @@
       ! HSL: surface layer depth (=0.2*HML)
       REAL                    :: SWW !angle between wind and waves
       REAL                    :: HSL !surface layer depth (=0.2*HML)
-      ! tmp variables for surface and SL averaged SD
-      REAL                    :: ETUSSX(NSEAL),        &
-                                 ETUSSY(NSEAL),        &
-                                 ETUSSXH(NSEAL),       &
-                                 ETUSSYH(NSEAL)
+      ! tmp variable for surface layer averaged Stokes drift
+      REAL                    :: USSCOH
 #endif
 !/
 !/ ------------------------------------------------------------------- /
@@ -1426,13 +1422,9 @@
 !
       FP1    = UNDEF
       THP1   = UNDEF
-#ifdef W3_CESMCOUPLED
-      ETUSSX  = 0.
-      ETUSSY  = 0.
       ETUSCX  = 0.
       ETUSCY  = 0.
-      ETUSSXH  = 0.
-      ETUSSYH  = 0
+#ifdef W3_CESMCOUPLED
       LANGMT = UNDEF
       LAPROJ = UNDEF
       LASL   = UNDEF
@@ -1509,7 +1501,7 @@
 !
 !
 #ifdef W3_OMPG
-!$OMP PARALLEL DO PRIVATE(JSEA,ISEA,FACTOR,FACTOR2,MA,MC,MB,KD,FKD,USSCO,M1,M2)
+!$OMP PARALLEL DO PRIVATE(JSEA,ISEA,FACTOR,FACTOR2,MA,MC,MB,KD,FKD,USSCO,USSCOH,M1,M2)
 #endif
 !
         DO JSEA=1, NSEAL
@@ -1617,37 +1609,12 @@
             BHD(JSEA) = BHD(JSEA) +                             &
                 GRAV*WN(IK,ISEA) * EBD(IK,JSEA) / (SINH(2.*KD))
 #ifdef W3_CESMCOUPLED
-            ! Surface Stokes Drift
-            ETUSSX(JSEA)  = ETUSSX(JSEA) + ABX(JSEA)*FACTOR*SIG(IK) &
-                 *WN(IK,ISEA)*COSH(2*WN(IK,ISEA)*DW(ISEA))          &
-                 /(SINH(WN(IK,ISEA)*DW(ISEA)))**2
-            ETUSSY(JSEA)  = ETUSSY(JSEA) + ABY(JSEA)*FACTOR*SIG(IK) &
-                 *WN(IK,ISEA)*COSH(2*WN(IK,ISEA)*DW(ISEA))          &
-                 /(SINH(WN(IK,ISEA)*DW(ISEA)))**2
-            ! Depth averaged Stokes Drift
-            ETUSSXH(JSEA)  = ETUSSXH(JSEA) + ABX(JSEA)*FACTOR*SIG(IK) &
-                 *(1.-EXP(-2.*WN(IK,ISEA)*HSL))/2./HSL                &
-                 *COSH(2*WN(IK,ISEA)*DW(ISEA))                        &
-                 /(SINH(WN(IK,ISEA)*DW(ISEA)))**2
-            ETUSSYH(JSEA)  = ETUSSYH(JSEA) + ABY(JSEA)*FACTOR*SIG(IK) &
-                 *(1.-EXP(-2.*WN(IK,ISEA)*HSL))/2./HSL                &
-                 *COSH(2*WN(IK,ISEA)*DW(ISEA))                        &
-                 /(SINH(WN(IK,ISEA)*DW(ISEA)))**2
+            USSCOH=0.5*FKD*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL*COSH(2.*KD)
 #endif
           ELSE
             USSCO=FACTOR*SIG(IK)*2.*WN(IK,ISEA)
 #ifdef W3_CESMCOUPLED
-            ! deep water limit
-            ! Surface Stokes Drift
-            ETUSSX(JSEA)  = ETUSSX(JSEA) + ABX(JSEA)*FACTOR*SIG(IK) &
-                     *2.*WN(IK,ISEA)
-            ETUSSY(JSEA)  = ETUSSY(JSEA) + ABY(JSEA)*FACTOR*SIG(IK) &
-                     *2.*WN(IK,ISEA)
-            ! Depth averaged Stokes Drift
-            ETUSSXH(JSEA)  = ETUSSXH(JSEA) + ABX(JSEA)*FACTOR*SIG(IK) &
-                     *(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL
-            ETUSSYH(JSEA)  = ETUSSYH(JSEA) + ABY(JSEA)*FACTOR*SIG(IK) &
-                     *(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL
+            USSCOH=FACTOR*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL
 #endif
             END IF
 !
@@ -1664,6 +1631,10 @@
 !
           USSX(JSEA)  = USSX(JSEA) + ABX(JSEA)*USSCO
           USSY(JSEA)  = USSY(JSEA) + ABY(JSEA)*USSCO
+#ifdef W3_CESMCOUPLED
+          USSXH(JSEA) = USSXH(JSEA) + ABX(JSEA)*USSCOH
+          USSYH(JSEA) = USSYH(JSEA) + ABY(JSEA)*USSCOH
+#endif
 !
 ! Fills the 3D Stokes drift spectrum array
 !  ! The US3D Stokes drift specrum array is now calculated in a
@@ -1964,7 +1935,7 @@
 #ifdef W3_CESMCOUPLED
         IX = MAPSF(ISEA,1)
         IY = MAPSF(ISEA,2)
-        HS = HML(IX,IY)/5.     ! depth over which SD is averaged
+        HSL = HML(IX,IY)/5.     ! depth over which SD is averaged
 #endif
 !
 ! 3.a Directional mss parameters
@@ -1995,16 +1966,22 @@
         SXX(JSEA) = SXX(JSEA) + FTE * ABXX(JSEA) / CG(NK,ISEA)
         SYY(JSEA) = SYY(JSEA) + FTE * ABYY(JSEA) / CG(NK,ISEA)
         SXY(JSEA) = SXY(JSEA) + FTE * ABXY(JSEA) / CG(NK,ISEA)
-#ifdef W3_CESMCOUPLED
-        ! tail for SD
-        ETUSSX(JSEA)  = ETUSSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
-        ETUSSY(JSEA)  = ETUSSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
-#endif
 !
 ! Tail for surface stokes drift is commented out: very sensitive to tail power
 !
 !       USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
 !       USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
+#ifdef W3_CESMCOUPLED
+        ! Add tail contribution for surface and layer averaged Stokes drift
+        USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
+        USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
+        USSXH(JSEA) = USSXH(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
+          *(1.-(1.-4.*HSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*HSL))    &
+          /6./WN(NK,ISEA)/HSL
+        USSYH(JSEA)  = USSYH(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
+          *(1.-(1.-4.*HSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*HSL))    &
+          /6./WN(NK,ISEA)/HSL
+#endif
         UBS(JSEA) = UBS(JSEA) + FTWL * EBAND/GRAV
         END DO
 !
@@ -2079,12 +2056,7 @@
             ! Output Stokes drift and Langmuir numbers
             ! USERO(JSEA,1) = HS(JSEA) / MAX ( 0.001 , DW(JSEA) )
             ! USERO(JSEA,2) = ASF(ISEA)
-            IF (ETUSSX(JSEA) .NE. 0. .OR. ETUSSY(JSEA) .NE. 0.) THEN
-
-               USSX(JSEA) = ETUSSX(JSEA)
-               USSY(JSEA) = ETUSSY(JSEA)
-               USSXH(JSEA) = ETUSSXH(JSEA)
-               USSYH(JSEA) = ETUSSYH(JSEA)
+            IF (USSX(JSEA) .NE. 0. .OR. USSY(JSEA) .NE. 0.) THEN
 
                ! this check is to divide by zeror error with gx17
                ! is there a better way to do this check?
