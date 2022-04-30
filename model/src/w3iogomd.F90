@@ -1229,10 +1229,11 @@
       ! ALPHALS      : angle between wind and Langmuir cells (surface)
       ! UD           : wind direction
       ! LAMULT       : enhancement factor
-      ! HML          : mixing layer depth (from coupler)
+      ! HSL          : surface layer depth (1/5 of the mixed layer depth
+      !                from the coupler)
       USE W3ADATMD, ONLY: LAMULT, USSXH, USSYH, LANGMT, LAPROJ, &
                           ALPHAL, ALPHALS, LASL, UD, LASLPJ
-      USE W3IDATMD, ONLY: HML
+      USE W3IDATMD, ONLY: HSL
       USE W3WDATMD, ONLY: ASF
 #endif
 #ifdef W3_S
@@ -1296,9 +1297,9 @@
       LOGICAL                 :: FLOLOC(NOGRP,NGRPP)
 #ifdef W3_CESMCOUPLED
       ! SWW: angle between wind and waves
-      ! HSL: surface layer depth (=0.2*HML)
-      REAL                    :: SWW !angle between wind and waves
-      REAL                    :: HSL !surface layer depth (=0.2*HML)
+      ! LHSL: local surface layer depth
+      REAL                    :: SWW
+      REAL                    :: LHSL
       ! tmp variable for surface layer averaged Stokes drift
       REAL                    :: USSCOH
 #endif
@@ -1566,7 +1567,7 @@
 ! Get surface layer depth
           IX    = MAPSF(ISEA,1)
           IY    = MAPSF(ISEA,2)
-          HSL   = HML(IX,IY)/5.     ! depth over which SD is averaged
+          LHSL  = HSL(IX,IY)      ! depth over which SD is averaged
 #endif
 
 !
@@ -1609,12 +1610,12 @@
             BHD(JSEA) = BHD(JSEA) +                             &
                 GRAV*WN(IK,ISEA) * EBD(IK,JSEA) / (SINH(2.*KD))
 #ifdef W3_CESMCOUPLED
-            USSCOH=0.5*FKD*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL*COSH(2.*KD)
+            USSCOH=0.5*FKD*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL*COSH(2.*KD)
 #endif
           ELSE
             USSCO=FACTOR*SIG(IK)*2.*WN(IK,ISEA)
 #ifdef W3_CESMCOUPLED
-            USSCOH=FACTOR*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*HSL))/HSL
+            USSCOH=FACTOR*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL
 #endif
             END IF
 !
@@ -1935,7 +1936,7 @@
 #ifdef W3_CESMCOUPLED
         IX = MAPSF(ISEA,1)
         IY = MAPSF(ISEA,2)
-        HSL = HML(IX,IY)/5.     ! depth over which SD is averaged
+        LHSL = HSL(IX,IY)     ! depth over which SD is averaged
 #endif
 !
 ! 3.a Directional mss parameters
@@ -1976,11 +1977,11 @@
         USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
         USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
         USSXH(JSEA) = USSXH(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
-          *(1.-(1.-4.*HSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*HSL))    &
-          /6./WN(NK,ISEA)/HSL
+          *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
+          /6./WN(NK,ISEA)/LHSL
         USSYH(JSEA)  = USSYH(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
-          *(1.-(1.-4.*HSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*HSL))    &
-          /6./WN(NK,ISEA)/HSL
+          *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
+          /6./WN(NK,ISEA)/LHSL
 #endif
         UBS(JSEA) = UBS(JSEA) + FTWL * EBAND/GRAV
         END DO
@@ -2077,7 +2078,7 @@
                      ! Stokes drift
                      ! LR check for divide by zero
                      if ((LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(HML(IX,IY)/4./HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
+                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
                         print *, 'LR warning A denom 0.'
                         ! This appears to be a decimal precision error
                         ! The first term equals minus the second term to 6 decimal places
@@ -2088,12 +2089,12 @@
                      else
 
                         ALPHALS(JSEA) = ATAN(SIN(SWW) / (LANGMT(JSEA)**2  &
-                             /0.4*LOG(MAX(ABS(HML(IX,IY)/4./HS(JSEA)),1.0))+COS(SWW)))
+                             /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
                      end if
 
 
                      ALPHALS(JSEA) = ATAN( SIN(SWW) / ( LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(HML(IX,IY)/4./HS(JSEA)),1.0))+COS(SWW)))
+                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
                      LAPROJ(JSEA) = LANGMT(JSEA) &
                           * SQRT(ABS(COS(ALPHALS(JSEA))) &
                           / ABS(COS(SWW-ALPHALS(JSEA))))
@@ -2103,13 +2104,13 @@
 
                      ! LR check for divide by zero (same as above)
                      if ((LANGMT(JSEA)**2  &
-                          /0.4*LOG(MAX(ABS(HML(IX,IY)/4./HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
+                          /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)).eq.0.) then
                         print *, 'LR warning B denom 0.'
                         ALPHAL(JSEA) = -1.5707956594501575
                      else
 
                         ALPHAL(JSEA) = ATAN(SIN(SWW) / (LANGMT(JSEA)**2  &
-                             /0.4*LOG(MAX(ABS(HML(IX,IY)/4./HS(JSEA)),1.0))+COS(SWW)))
+                             /0.4*LOG(MAX(ABS(1.25*HSL(IX,IY)/HS(JSEA)),1.0))+COS(SWW)))
                      end if
                      LASL(JSEA) = SQRT(UST(ISEA)*ASF(ISEA)         &
                           * SQRT(DAIR/DWAT)                       &
@@ -2120,8 +2121,8 @@
                      LAMULT(JSEA) = MIN(5.0, ABS(COS(ALPHAL(JSEA))) * &
                           SQRT(1.0+(1.5*LASLPJ(JSEA))**(-2)+(5.4*real(LASLPJ(JSEA),kind=8))**(-4)))
                      ! user defined output
-                     USERO(JSEA,1) = HML(IX,IY)
-                     !USERO(JSEA,2) = COS(ALPHAL(JSEA)
+                     ! USERO(JSEA,1) = HSL(IX,IY)
+                     ! USERO(JSEA,2) = COS(ALPHAL(JSEA)
                   END IF
                END IF
             END IF

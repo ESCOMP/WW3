@@ -274,7 +274,7 @@ contains
     use w3odatmd    , only: w3seto
     use w3wdatmd    , only: time, w3setw
 #ifdef W3_CESMCOUPLED
-    use w3idatmd    , only: HML
+    use w3idatmd    , only: HSL
 #else
     use wmupdtmd    , only: wmupd2
     use wmmdatmd    , only: wmsetm, mpi_comm_grd
@@ -484,8 +484,8 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! ocn mixing layer depth
-    global_data = max(global_data, 5.)
-    call FillGlobalInput(global_data, HML)
+    global_data = max(global_data, 5.)*0.2
+    call FillGlobalInput(global_data, HSL)
 #endif
     ! ---------------
     ! INFLAGS1(5) - atm momentum fields
