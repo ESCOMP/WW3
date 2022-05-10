@@ -2647,6 +2647,9 @@
                           TH1M, STH1M, TH2M, STH2M, HSIG, PHICE, TAUICE,&
                           STMAXE, STMAXD, HMAXE, HCMAXE, HMAXD, HCMAXD,&
                           USSP, TAUOCX, TAUOCY
+#ifdef W3_CESMCOUPLED
+      USE W3ADATMD, ONLY: USSHX, USSHY
+#endif
 !/
       USE W3ODATMD, ONLY: NOGRP, NGRPP, IDOUT, UNDEF, NDST, NDSE,     &
                           FLOGRD, IPASS => IPASS1, WRITE => WRITE1,   &
@@ -2998,6 +3001,12 @@
                                      TAUOCX(ISEA) = UNDEF
                                      TAUOCY(ISEA) = UNDEF
                   END IF
+#ifdef W3_CESMCOUPLED
+                IF ( FLOGRD( 6, 14) ) THEN
+                                     USSHX (ISEA) = UNDEF
+                                     USSHY (ISEA) = UNDEF
+                  END IF
+#endif
 !
                 IF ( FLOGRD( 7, 1) ) THEN
                                      ABA   (ISEA) = UNDEF
@@ -3308,19 +3317,24 @@
                   ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 8 ) THEN
                     WRITE ( NDSOG ) US3D(1:NSEA,   US3DF(2):US3DF(3))
                     WRITE ( NDSOG ) US3D(1:NSEA,NK+US3DF(2):NK+US3DF(3))
-                 ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ.  9 ) THEN
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ.  9 ) THEN
                     WRITE ( NDSOG ) P2SMS(1:NSEA,P2MSF(2):P2MSF(3))
-                 ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 10 ) THEN
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 10 ) THEN
                     WRITE ( NDSOG ) TAUICE(1:NSEA,1)
                     WRITE ( NDSOG ) TAUICE(1:NSEA,2)
-                 ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 11 ) THEN
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 11 ) THEN
                     WRITE ( NDSOG ) PHICE(1:NSEA)
-                 ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 12 ) THEN
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 12 ) THEN
                     WRITE ( NDSOG ) USSP(1:NSEA,   1:USSPF(2))
                     WRITE ( NDSOG ) USSP(1:NSEA,NK+1:NK+USSPF(2))
-                 ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 13 ) THEN
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 13 ) THEN
                     WRITE ( NDSOG ) TAUOCX(1:NSEA)
                     WRITE ( NDSOG ) TAUOCY(1:NSEA)
+#ifdef W3_CESMCOUPLED
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 14 ) THEN
+                    WRITE ( NDSOG ) USSHX(1:NSEA)
+                    WRITE ( NDSOG ) USSHY(1:NSEA)
+#endif
 !
 !     Section 7)
 !
@@ -3662,6 +3676,13 @@
                                                        TAUOCX(1:NSEA)
                     READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
                                                        TAUOCY(1:NSEA)
+#ifdef W3_CESMCOUPLED
+                  ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 14 ) THEN
+                    READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
+                                                       USSHX(1:NSEA)
+                    READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
+                                                       USSHY(1:NSEA)
+#endif
 
 !
 !     Section 7)
