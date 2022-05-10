@@ -440,9 +440,6 @@
                                  XPRMS(:), XTPMS(:), XPHICE(:),       &
                                  XTAUICE(:,:)
         REAL, POINTER         :: XP2SMS(:,:), XUS3D(:,:), XUSSP(:,:)
-#ifdef W3_CESMCOUPLED
-        REAL, POINTER         ::  XLANGMT(:)
-#endif
 !
 ! Output fields group 7)
 !
@@ -1258,9 +1255,6 @@
       WADATS(IMOD)%TPMS   = UNDEF
       WADATS(IMOD)%PHICE  = UNDEF
       WADATS(IMOD)%TAUICE = UNDEF
-#ifdef W3_CESMCOUPLED
-      WADATS(IMOD)%LANGMT = UNDEF
-#endif
       IF (  P2MSF(1).GT.0 ) WADATS(IMOD)%P2SMS  = UNDEF
       IF (  US3DF(1).GT.0 ) WADATS(IMOD)%US3D   = UNDEF
       IF (  USSPF(1).GT.0 ) WADATS(IMOD)%USSP   = UNDEF
@@ -2220,16 +2214,6 @@
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
 !
-#ifdef W3_CESMCOUPLED
-      IF ( OUTFLAGS( 6, 14) ) THEN
-          ALLOCATE ( WADATS(IMOD)%XLANGMT(NXXX), STAT=ISTAT )
-          CHECK_ALLOC_STATUS ( ISTAT )
-        ELSE
-          ALLOCATE ( WADATS(IMOD)%XLANGMT(1), STAT=ISTAT )
-          CHECK_ALLOC_STATUS ( ISTAT )
-        END IF
-#endif
-!
       WADATS(IMOD)%XSXX    = UNDEF
       WADATS(IMOD)%XSYY    = UNDEF
       WADATS(IMOD)%XSXY    = UNDEF
@@ -2250,9 +2234,6 @@
       WADATS(IMOD)%XUSSP   = UNDEF
       WADATS(IMOD)%XTAUOCX = UNDEF
       WADATS(IMOD)%XTAUOCY = UNDEF
-#ifdef W3_CESMCOUPLED
-      WADATS(IMOD)%XLANGMT = UNDEF
-#endif
 !
       IF ( OUTFLAGS( 7, 1) ) THEN
           ALLOCATE ( WADATS(IMOD)%XABA(NXXX), STAT=ISTAT )
@@ -3299,9 +3280,6 @@
           BEDFORMS=> WADATS(IMOD)%XBEDFORMS
           PHIBBL => WADATS(IMOD)%XPHIBBL
           TAUBBL => WADATS(IMOD)%XTAUBBL
-#ifdef W3_CESMCOUPLED
-          LANGMT => WADATS(IMOD)%XLANGMT
-#endif
 !
           MSSX   => WADATS(IMOD)%XMSSX
           MSSY   => WADATS(IMOD)%XMSSY
