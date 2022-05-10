@@ -442,6 +442,9 @@
                                  XPRMS(:), XTPMS(:), XPHICE(:),       &
                                  XTAUICE(:,:)
         REAL, POINTER         :: XP2SMS(:,:), XUS3D(:,:), XUSSP(:,:)
+#ifdef W3_CESMCOUPLED
+        REAL, POINTER         :: XUSSHX(:), XUSSHY(:)
+#endif
 !
 ! Output fields group 7)
 !
@@ -2216,6 +2219,20 @@
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
 !
+#ifdef W3_CESMCOUPLED
+      IF ( OUTFLAGS( 6, 14) ) THEN
+          ALLOCATE ( WADATS(IMOD)%XUSSHX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSY(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        ELSE
+          ALLOCATE ( WADATS(IMOD)%XUSSHX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSY(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+        END IF
+#endif
+!
       WADATS(IMOD)%XSXX    = UNDEF
       WADATS(IMOD)%XSYY    = UNDEF
       WADATS(IMOD)%XSXY    = UNDEF
@@ -2236,6 +2253,10 @@
       WADATS(IMOD)%XUSSP   = UNDEF
       WADATS(IMOD)%XTAUOCX = UNDEF
       WADATS(IMOD)%XTAUOCY = UNDEF
+#ifdef W3_CESMCOUPLED
+      WADATS(IMOD)%XUSSHX   = UNDEF
+      WADATS(IMOD)%XUSSHY   = UNDEF
+#endif
 !
       IF ( OUTFLAGS( 7, 1) ) THEN
           ALLOCATE ( WADATS(IMOD)%XABA(NXXX), STAT=ISTAT )
@@ -3297,6 +3318,11 @@
           CFLKMAX =>  WADATS(IMOD)%XCFLKMAX
 !
           USERO  => WADATS(IMOD)%XUSERO
+!
+#ifdef W3_CESMCOUPLED
+          USSHX   => WADATS(IMOD)%XUSSHX
+          USSHY   => WADATS(IMOD)%XUSSHY
+#endif
 !
         END IF
 !

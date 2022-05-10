@@ -34,6 +34,9 @@ contains
     USE W3ADATMD, ONLY: CFLXYMAX, CFLTHMAX, CFLKMAX, P2SMS, US3D
     USE W3ADATMD, ONLY: TH1M, STH1M, TH2M, STH2M, HSIG, PHICE, TAUICE
     USE W3ADATMD, ONLY: STMAXE, STMAXD, HMAXE, HCMAXE, HMAXD, HCMAXD, USSP
+ #ifdef W3_CESMCOUPLED
+    USE W3ADATMD, ONLY: USSHX, USSHY
+ #endif
     use wav_shr_mod, only: time_origin, calendar_name, elapsed_secs
     USE NETCDF
 
@@ -200,6 +203,12 @@ contains
           IF ( FLOGRD( 6, 10) ) TAUICE(ISEA,:) = UNDEF
           IF ( FLOGRD( 6, 11) ) PHICE(ISEA) = UNDEF
           IF ( FLOGRD( 6, 12) ) USSP(ISEA,:) = UNDEF
+#ifdef W3_CESMCOUPLED
+          IF ( FLOGRD( 6, 14) ) THEN
+             USSHX (ISEA) = UNDEF
+             USSHY (ISEA) = UNDEF
+          END IF
+#endif
           !
           IF ( FLOGRD( 7, 1) ) THEN
              ABA   (ISEA) = UNDEF
@@ -517,6 +526,19 @@ contains
                    UNITSTR2 = 'm/s'
                    LNSTR1 = 'Stokes drift at z=0'
                    LNSTR2 = 'Stokes drift at z=0'
+#ifdef W3_CESMCOUPLED
+                else if ( IFI .eq. 6 .and. IFJ .eq. 14 ) then
+                   AUX1(1:NSEA) = USSHX(1:NSEA)
+                   AUX2(1:NSEA) = USSHY(1:NSEA)
+                   WAUX1 = .true.
+                   WAUX2 = .true.
+                   FLDSTR1 = 'USSHX'
+                   FLDSTR2 = 'USSHY'
+                   UNITSTR1 = 'm/s'
+                   UNITSTR2 = 'm/s'
+                   LNSTR1 = 'Stokes drift averaged over a surface layer, x-component'
+                   LNSTR2 = 'Stokes drift averaged over a surface layer, y-component'
+#endif
                 !
                 !     Section 7)
                 !

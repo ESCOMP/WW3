@@ -4,7 +4,7 @@ module wav_grdout
 
   implicit none
 
-  integer, parameter   :: maxvars = 23         ! maximum number of variables/group
+  integer, parameter   :: maxvars = 25         ! maximum number of variables/group
 
   private ! except
 
@@ -201,7 +201,7 @@ contains
                        ]
 
     !  6   Wave-ocean layer
-    gridoutdefs(6,1:23) = [ &
+    gridoutdefs(6,1:25) = [ &
     varatts( "SXY  ", "SXX       ", "Radiation stresses xx                           ", "N m-1     ", "  ", .false.) , &
     varatts( "SXY  ", "SYY       ", "Radiation stresses yy                           ", "N m-1     ", "  ", .false.) , &
     varatts( "SXY  ", "SXY       ", "Radiation stresses xy                           ", "N m-1     ", "  ", .false.) , &
@@ -225,6 +225,8 @@ contains
     varatts( "USP  ", "USSPY     ", "Partitioned surface Stokes drift y              ", "m s-1     ", "p ", .false.) , &
     varatts( "TWC  ", "TAUOCX    ", "Total wave to ocean stress x                    ", "Pa        ", "  ", .false.) , &
     varatts( "TWC  ", "TAUOCY    ", "Total wave to ocean stress y                    ", "Pa        ", "  ", .false.) , &
+    varatts( "USSH ", "USSHX     ", "Surface layer averaged Stokes drift x           ", "m s-1     ", "  ", .false.) , &
+    varatts( "USSH ", "USSHY     ", "Surface layer averaged Stokes drift y           ", "m s-1     ", "  ", .false.) , &
                        ]
 
     !  7   Wave-bottom layer
