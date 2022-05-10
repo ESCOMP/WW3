@@ -594,7 +594,7 @@ contains
     use w3iogomd      , only : CALC_U3STOKES
 #ifdef W3_CESMCOUPLED
     use w3wdatmd      , only : ASF, UST
-    use w3adatmd      , only : USSXH, USSYH, UD, HS
+    use w3adatmd      , only : USSHX, USSHY, UD, HS
     use w3idatmd      , only : HSL
 #else
     use wmmdatmd      , only : mdse, mdst, wmsetm
@@ -671,7 +671,7 @@ contains
           ix  = mapsf(isea,1)
           iy  = mapsf(isea,2)
           if (mapsta(iy,ix) == 1) then
-             sww = atan2(USSYH(jsea),USSXH(jsea)) - UD(isea)
+             sww = atan2(USSHY(jsea),USSHX(jsea)) - UD(isea)
              alphal = atan( sin(sww) / (                                       &
                             2.5 * UST(isea)*ASF(isea)*sqrt(dair/dwat)          &
                           / max(1.e-14, sqrt(USSX(jsea)**2+USSY(jsea)**2))     &
@@ -682,7 +682,7 @@ contains
              !       Langmuir number which may result from zero surface friction
              !       velocity but may cause unphysically strong Langmuir mixing
              laslpj = max( 0.2, sqrt( UST(isea)*ASF(isea)*sqrt(dair/dwat)      &
-                    / max(1.e-14, sqrt(USSXH(jsea)**2+USSYH(jsea)**2)) )       &
+                    / max(1.e-14, sqrt(USSHX(jsea)**2+USSHY(jsea)**2)) )       &
                     * sqrt(abs(cos(alphal))/abs(cos(sww-alphal))) )
              sw_lamult(jsea) = abs(cos(alphal)) *                              &
                                sqrt(1.0+(1.5*laslpj)**(-2)+(5.4*laslpj)**(-4))
@@ -704,7 +704,7 @@ contains
              !       Langmuir number which may result from zero surface friction
              !       velocity but may cause unphysically strong Langmuir mixing
              sw_lasl(jsea) = max(0.2, sqrt(UST(isea)*ASF(isea)*sqrt(dair/dwat) &
-                           / max(1.e-14, sqrt(USSXH(jsea)**2+USSYH(jsea)**2))))
+                           / max(1.e-14, sqrt(USSHX(jsea)**2+USSHY(jsea)**2))))
           else
              sw_lasl(jsea)  = 1.e6
           endif

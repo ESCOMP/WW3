@@ -2476,7 +2476,7 @@
 #endif
 
 #ifdef W3_CESMCOUPLED
-      USE W3ADATMD, ONLY: USSXH, USSYH
+      USE W3ADATMD, ONLY: USSHX, USSHY
 #endif
 
 #ifdef W3_MPI

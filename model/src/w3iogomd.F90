@@ -1220,10 +1220,10 @@
                           NOGRP, NGRPP
       USE W3ADATMD, ONLY: NSEALM
 #ifdef W3_CESMCOUPLED
-      ! USSXH, USSYH : surface layer (SL) averaged SD
+      ! USSHX, USSHY : surface layer (SL) averaged SD
       ! HSL          : surface layer depth (1/5 of the mixed layer depth
       !                from the coupler)
-      USE W3ADATMD, ONLY: USSXH, USSYH
+      USE W3ADATMD, ONLY: USSHX, USSHY
       USE W3IDATMD, ONLY: HSL
 #endif
 #ifdef W3_S
@@ -1416,8 +1416,8 @@
       ETUSCX  = 0.
       ETUSCY  = 0.
 #ifdef W3_CESMCOUPLED
-      USSXH  = 0.
-      USSYH  = 0.
+      USSHX  = 0.
+      USSHY  = 0.
 #endif
 !
 ! 2.  Integral over discrete part of spectrum ------------------------ *
@@ -1614,8 +1614,8 @@
           USSX(JSEA)  = USSX(JSEA) + ABX(JSEA)*USSCO
           USSY(JSEA)  = USSY(JSEA) + ABY(JSEA)*USSCO
 #ifdef W3_CESMCOUPLED
-          USSXH(JSEA) = USSXH(JSEA) + ABX(JSEA)*USSCOH
-          USSYH(JSEA) = USSYH(JSEA) + ABY(JSEA)*USSCOH
+          USSHX(JSEA) = USSHX(JSEA) + ABX(JSEA)*USSCOH
+          USSHY(JSEA) = USSHY(JSEA) + ABY(JSEA)*USSCOH
 #endif
 !
 ! Fills the 3D Stokes drift spectrum array
@@ -1957,10 +1957,10 @@
         ! Add tail contribution for surface and layer averaged Stokes drift
         USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
         USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
-        USSXH(JSEA) = USSXH(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
+        USSHX(JSEA) = USSHX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
           *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
           /6./WN(NK,ISEA)/LHSL
-        USSYH(JSEA)  = USSYH(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
+        USSHY(JSEA)  = USSHY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
           *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
           /6./WN(NK,ISEA)/LHSL
 #endif

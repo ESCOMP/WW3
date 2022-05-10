@@ -154,6 +154,8 @@
 !      US3D      R.A.  Public   3D Stokes drift.
 !      USSP      R.A.  Public   Partitioned Surface Stokes drift
 !
+!      USSHX/Y   R.A.  Public   Surface layer averaged Stokes drift.
+!
 !      ABA       R.A.  Public   Near-bottom rms wave ex. amplitude.
 !      ABD       R.A.  Public   Corresponding direction.
 !      UBA       R.A.  Public   Near-bottom rms wave velocity.
@@ -470,7 +472,7 @@
         REAL, POINTER         :: XUSERO(:,:)
 #ifdef W3_CESMCOUPLED
         ! Output fileds for Langmuir mixing in group
-        REAL, POINTER         :: USSXH(:), USSYH(:)
+        REAL, POINTER         :: USSHX(:), USSHY(:)
 #endif
 !
 ! Spatial derivatives
@@ -553,7 +555,7 @@
 !/ Data aliases for structure WADAT(S)
 !/
 #ifdef W3_CESMCOUPLED
-     REAL, POINTER            :: USSXH(:), USSYH(:)
+     REAL, POINTER            :: USSHX(:), USSHY(:)
 #endif
       REAL, POINTER           :: CG(:,:), WN(:,:)
       REAL, POINTER           :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
@@ -1036,8 +1038,8 @@
       CHECK_ALLOC_STATUS ( ISTAT )
 
 #ifdef W3_CESMCOUPLED
-      ALLOCATE ( WADATS(IMOD)%USSXH(NSEALM)   , &
-                 WADATS(IMOD)%USSYH(NSEALM)   , &
+      ALLOCATE ( WADATS(IMOD)%USSHX(NSEALM)   , &
+                 WADATS(IMOD)%USSHY(NSEALM)   , &
                  STAT=ISTAT )
       CHECK_ALLOC_STATUS ( ISTAT )
 #endif
@@ -2957,8 +2959,8 @@
 !
           WN     => WADATS(IMOD)%WN
 #ifdef W3_CESMCOUPLED
-          USSXH  => WADATS(IMOD)%USSXH
-          USSYH  => WADATS(IMOD)%USSYH
+          USSHX  => WADATS(IMOD)%USSHX
+          USSHY  => WADATS(IMOD)%USSHY
 #endif
 #ifdef W3_IC3
      IC3WN_R=> WADATS(IMOD)%IC3WN_R
