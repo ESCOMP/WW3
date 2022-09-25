@@ -1953,7 +1953,7 @@
 !
 !       USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
 !       USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
-#ifdef W3_CESMCOUPLED
+#if defined(W3_CESMCOUPLED) || defined(W3_SDTAIL)
         ! Add tail contribution for surface and layer averaged Stokes drift
         USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
         USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
