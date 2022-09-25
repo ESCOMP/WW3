@@ -670,7 +670,7 @@ contains
           isea = iaproc + (jsea-1)*naproc
           ix  = mapsf(isea,1)
           iy  = mapsf(isea,2)
-          if (mapsta(iy,ix) == 1) then
+          if (mapsta(iy,ix) == 1 .and. HS(jsea) > zero) then
              sww = atan2(USSHY(jsea),USSHX(jsea)) - UD(isea)
              alphal = atan( sin(sww) / (                                       &
                             2.5 * UST(isea)*ASF(isea)*sqrt(dair/dwat)          &
