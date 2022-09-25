@@ -34,9 +34,9 @@ contains
     USE W3ADATMD, ONLY: CFLXYMAX, CFLTHMAX, CFLKMAX, P2SMS, US3D
     USE W3ADATMD, ONLY: TH1M, STH1M, TH2M, STH2M, HSIG, PHICE, TAUICE
     USE W3ADATMD, ONLY: STMAXE, STMAXD, HMAXE, HCMAXE, HMAXD, HCMAXD, USSP
- #ifdef W3_CESMCOUPLED
+#ifdef W3_CESMCOUPLED
     USE W3ADATMD, ONLY: USSHX, USSHY
- #endif
+#endif
     use wav_shr_mod, only: time_origin, calendar_name, elapsed_secs
     USE NETCDF
 
