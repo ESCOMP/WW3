@@ -154,6 +154,8 @@
 !      US3D      R.A.  Public   3D Stokes drift.
 !      USSP      R.A.  Public   Partitioned Surface Stokes drift
 !
+!      USSHX/Y   R.A.  Public   Surface layer averaged Stokes drift.
+!
 !      ABA       R.A.  Public   Near-bottom rms wave ex. amplitude.
 !      ABD       R.A.  Public   Corresponding direction.
 !      UBA       R.A.  Public   Near-bottom rms wave velocity.
@@ -441,7 +443,7 @@
                                  XTAUICE(:,:)
         REAL, POINTER         :: XP2SMS(:,:), XUS3D(:,:), XUSSP(:,:)
 #ifdef W3_CESMCOUPLED
-        REAL, POINTER         ::  XLANGMT(:)
+        REAL, POINTER         :: XUSSHX(:), XUSSHY(:)
 #endif
 !
 ! Output fields group 7)
@@ -473,9 +475,7 @@
         REAL, POINTER         :: XUSERO(:,:)
 #ifdef W3_CESMCOUPLED
         ! Output fileds for Langmuir mixing in group
-        REAL, POINTER         :: LANGMT(:), LAPROJ(:), LASL(:),       &
-                                 LASLPJ(:), LAMULT(:), ALPHAL(:),     &
-                                 ALPHALS(:), USSXH(:), USSYH(:)
+        REAL, POINTER         :: USSHX(:), USSHY(:)
 #endif
 !
 ! Spatial derivatives
@@ -558,9 +558,7 @@
 !/ Data aliases for structure WADAT(S)
 !/
 #ifdef W3_CESMCOUPLED
-     REAL, POINTER           :: LANGMT(:), LAPROJ(:), ALPHAL(:),      &
-                                ALPHALS(:), LAMULT(:), LASL(:),       &
-                                LASLPJ(:), USSXH(:), USSYH(:)
+     REAL, POINTER            :: USSHX(:), USSHY(:)
 #endif
       REAL, POINTER           :: CG(:,:), WN(:,:)
       REAL, POINTER           :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
@@ -1043,15 +1041,8 @@
       CHECK_ALLOC_STATUS ( ISTAT )
 
 #ifdef W3_CESMCOUPLED
-      ALLOCATE ( WADATS(IMOD)%USSXH(NSEALM)   , &
-                 WADATS(IMOD)%USSYH(NSEALM)   , &
-                 WADATS(IMOD)%LANGMT(NSEALM)  , &
-                 WADATS(IMOD)%LAPROJ(NSEALM)  , &
-                 WADATS(IMOD)%LASL(NSEALM)    , &
-                 WADATS(IMOD)%LASLPJ(NSEALM)  , &
-                 WADATS(IMOD)%ALPHAL(NSEALM)  , &
-                 WADATS(IMOD)%ALPHALS(NSEALM) , &
-                 WADATS(IMOD)%LAMULT(NSEALM)  , &
+      ALLOCATE ( WADATS(IMOD)%USSHX(NSEALM)   , &
+                 WADATS(IMOD)%USSHY(NSEALM)   , &
                  STAT=ISTAT )
       CHECK_ALLOC_STATUS ( ISTAT )
 #endif
@@ -1077,6 +1068,8 @@
       WADATS(IMOD)%QP     = UNDEF
       WADATS(IMOD)%WBT    = UNDEF
       WADATS(IMOD)%WNMEAN = UNDEF
+      WADATS(IMOD)%USSHX  = UNDEF
+      WADATS(IMOD)%USSHY  = UNDEF
 
 #ifdef W3_MEMCHECK
        WRITE(30000+IAPROC,*) 'memcheck_____:', 'W3DIMA 3'
@@ -1269,9 +1262,6 @@
       WADATS(IMOD)%TPMS   = UNDEF
       WADATS(IMOD)%PHICE  = UNDEF
       WADATS(IMOD)%TAUICE = UNDEF
-#ifdef W3_CESMCOUPLED
-      WADATS(IMOD)%LANGMT = UNDEF
-#endif
       IF (  P2MSF(1).GT.0 ) WADATS(IMOD)%P2SMS  = UNDEF
       IF (  US3DF(1).GT.0 ) WADATS(IMOD)%US3D   = UNDEF
       IF (  USSPF(1).GT.0 ) WADATS(IMOD)%USSP   = UNDEF
@@ -1543,7 +1533,7 @@
 ! 5.  Restore previous grid setting if necessary
 !
       IF ( JGRID .NE. IMOD ) CALL W3SETG ( JGRID, NDSE, NDST )
- 
+
 #ifdef W3_MEMCHECK
        WRITE(30000+IAPROC,*) 'memcheck_____:', 'W3DIMA END'
        call getMallocInfo(mallinfos)
@@ -2234,10 +2224,14 @@
 !
 #ifdef W3_CESMCOUPLED
       IF ( OUTFLAGS( 6, 14) ) THEN
-          ALLOCATE ( WADATS(IMOD)%XLANGMT(NXXX), STAT=ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSHX(NXXX), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSHY(NXXX), STAT=ISTAT )
           CHECK_ALLOC_STATUS ( ISTAT )
         ELSE
-          ALLOCATE ( WADATS(IMOD)%XLANGMT(1), STAT=ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSHX(1), STAT=ISTAT )
+          CHECK_ALLOC_STATUS ( ISTAT )
+          ALLOCATE ( WADATS(IMOD)%XUSSHY(1), STAT=ISTAT )
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
 #endif
@@ -2263,7 +2257,8 @@
       WADATS(IMOD)%XTAUOCX = UNDEF
       WADATS(IMOD)%XTAUOCY = UNDEF
 #ifdef W3_CESMCOUPLED
-      WADATS(IMOD)%XLANGMT = UNDEF
+      WADATS(IMOD)%XUSSHX   = UNDEF
+      WADATS(IMOD)%XUSSHY   = UNDEF
 #endif
 !
       IF ( OUTFLAGS( 7, 1) ) THEN
@@ -2988,16 +2983,8 @@
 !
           WN     => WADATS(IMOD)%WN
 #ifdef W3_CESMCOUPLED
-          ! USSX and USSY are already set
-          LANGMT => WADATS(IMOD)%LANGMT
-          LAPROJ => WADATS(IMOD)%LAPROJ
-          LASL   => WADATS(IMOD)%LASL
-          LASLPJ => WADATS(IMOD)%LASLPJ
-          ALPHAL => WADATS(IMOD)%ALPHAL
-          ALPHALS=> WADATS(IMOD)%ALPHALS
-          USSXH  => WADATS(IMOD)%USSXH
-          USSYH  => WADATS(IMOD)%USSYH
-          LAMULT => WADATS(IMOD)%LAMULT
+          USSHX  => WADATS(IMOD)%USSHX
+          USSHY  => WADATS(IMOD)%USSHY
 #endif
 #ifdef W3_IC3
      IC3WN_R=> WADATS(IMOD)%IC3WN_R
@@ -3319,9 +3306,6 @@
           BEDFORMS=> WADATS(IMOD)%XBEDFORMS
           PHIBBL => WADATS(IMOD)%XPHIBBL
           TAUBBL => WADATS(IMOD)%XTAUBBL
-#ifdef W3_CESMCOUPLED
-          LANGMT => WADATS(IMOD)%XLANGMT
-#endif
 !
           MSSX   => WADATS(IMOD)%XMSSX
           MSSY   => WADATS(IMOD)%XMSSY
@@ -3337,6 +3321,11 @@
           CFLKMAX =>  WADATS(IMOD)%XCFLKMAX
 !
           USERO  => WADATS(IMOD)%XUSERO
+!
+#ifdef W3_CESMCOUPLED
+          USSHX   => WADATS(IMOD)%XUSSHX
+          USSHY   => WADATS(IMOD)%XUSSHY
+#endif
 !
         END IF
 !

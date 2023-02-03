@@ -842,6 +842,7 @@ contains
     integer           :: jsea
     real(r8), pointer :: z0rlen(:)
     real(r8), pointer :: sw_lamult(:)
+    real(r8), pointer :: sw_lasl(:)
     real(r8), pointer :: sw_ustokes(:)
     real(r8), pointer :: sw_vstokes(:)
     real(r8), pointer :: wave_elevation_spectrum(:,:)
@@ -862,6 +863,14 @@ contains
        call state_getfldptr(exportState, 'Sw_lamult', sw_lamult, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        sw_lamult (:) = 1.
+    endif
+    if (state_fldchk(exportState, 'Sw_lasl')) then
+      call state_getfldptr(exportState, 'Sw_lasl', sw_lasl, rc=rc)
+      if (ChkErr(rc,__LINE__,u_FILE_u)) return
+      ! note: the default value of this surface layer averaged Langmuir number
+      ! should be a large number to be consistent with lamult=1., ustokes=0.,
+      ! and vstokes=0.
+      sw_lasl (:) = 1.e6
     endif
     if (state_fldchk(exportState, 'Sw_ustokes')) then
        call state_getfldptr(exportState, 'Sw_ustokes', sw_ustokes, rc=rc)

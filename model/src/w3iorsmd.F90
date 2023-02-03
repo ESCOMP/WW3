@@ -283,6 +283,9 @@
       USE W3PARALL, ONLY: PRINT_MY_TIME
 #endif
       USE w3odatmd, ONLY : RUNTYPE, INITFILE
+#ifdef W3_CESMCOUPLED
+      USE w3adatmd, ONLY : USSHX, USSHY
+#endif
 !!!!!/PDLIB    USE PDLIB_FIELD_VEC!, only : UNST_PDLIB_READ_FROM_FILE, UNST_PDLIB_WRITE_TO_FILE
 #ifdef W3_PDLIB
     USE PDLIB_FIELD_VEC
@@ -1097,6 +1100,12 @@
                     WRITE(NDSR,ERR=803,IOSTAT=IERR) TAUOCX(1:NSEA)
                     WRITE(NDSR,ERR=803,IOSTAT=IERR) TAUOCY(1:NSEA)
                   ENDIF
+#ifdef W3_CESMCOUPLED
+                  IF ( FLOGRR(6,14) ) THEN
+                    WRITE(NDSR,ERR=803,IOSTAT=IERR) USSHX(1:NSEA)
+                    WRITE(NDSR,ERR=803,IOSTAT=IERR) USSHY(1:NSEA)
+                  ENDIF
+#endif
                   IF ( FLOGRR(7,2) ) THEN
                     WRITE(NDSR,ERR=803,IOSTAT=IERR) UBA(1:NSEA)
                     WRITE(NDSR,ERR=803,IOSTAT=IERR) UBD(1:NSEA)
@@ -1442,6 +1451,22 @@
                   ENDIF
                 ENDDO
               ENDIF
+#ifdef W3_CESMCOUPLED
+#ifdef W3_DEBUGINIT
+         WRITE(740+IAPROC,*) 'Before reading USSH'
+#endif
+              IF ( FLOGOA(6,14) ) THEN
+                READ (NDSR,ERR=802,IOSTAT=IERR) TMP(1:NSEA)
+                READ (NDSR,ERR=802,IOSTAT=IERR) TMP2(1:NSEA)
+                DO I=1, NSEALM
+                  J = IAPROC + (I-1)*NAPROC
+                  IF (J .LE. NSEA) THEN
+                    USSHX(I) = TMP(J)
+                    USSHY(I) = TMP2(J)
+                  ENDIF
+                ENDDO
+              ENDIF
+#endif
 #ifdef W3_DEBUGINIT
          WRITE(740+IAPROC,*) 'Before reading UB'
 #endif
@@ -1534,6 +1559,10 @@
               UBD     = 0.
               PHIBBL  = 0.
               TAUBBL  = 0.
+#ifdef W3_CESMCOUPLED
+              USSHX   = 0.
+              USSHY   = 0.
+#endif
             ENDIF
 #ifdef W3_T
               WRITE (NDST,9008)
