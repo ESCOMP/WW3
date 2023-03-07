@@ -442,9 +442,7 @@
                                  XPRMS(:), XTPMS(:), XPHICE(:),       &
                                  XTAUICE(:,:)
         REAL, POINTER         :: XP2SMS(:,:), XUS3D(:,:), XUSSP(:,:)
-#ifdef W3_CESMCOUPLED
         REAL, POINTER         :: XUSSHX(:), XUSSHY(:)
-#endif
 !
 ! Output fields group 7)
 !
@@ -473,10 +471,7 @@
 !
         REAL, POINTER         ::  USERO(:,:)
         REAL, POINTER         :: XUSERO(:,:)
-#ifdef W3_CESMCOUPLED
-        ! Output fileds for Langmuir mixing in group
         REAL, POINTER         :: USSHX(:), USSHY(:)
-#endif
 !
 ! Spatial derivatives
 !
@@ -557,9 +552,7 @@
 !/
 !/ Data aliases for structure WADAT(S)
 !/
-#ifdef W3_CESMCOUPLED
      REAL, POINTER            :: USSHX(:), USSHY(:)
-#endif
       REAL, POINTER           :: CG(:,:), WN(:,:)
       REAL, POINTER           :: IC3WN_R(:,:), IC3WN_I(:,:), IC3CG(:,:)
 !
@@ -1040,12 +1033,6 @@
                  STAT=ISTAT )
       CHECK_ALLOC_STATUS ( ISTAT )
 
-#ifdef W3_CESMCOUPLED
-      ALLOCATE ( WADATS(IMOD)%USSHX(NSEALM)   , &
-                 WADATS(IMOD)%USSHY(NSEALM)   , &
-                 STAT=ISTAT )
-      CHECK_ALLOC_STATUS ( ISTAT )
-#endif
 !
       WADATS(IMOD)%HS     = UNDEF
       WADATS(IMOD)%WLM    = UNDEF
@@ -1068,8 +1055,6 @@
       WADATS(IMOD)%QP     = UNDEF
       WADATS(IMOD)%WBT    = UNDEF
       WADATS(IMOD)%WNMEAN = UNDEF
-      WADATS(IMOD)%USSHX  = UNDEF
-      WADATS(IMOD)%USSHY  = UNDEF
 
 #ifdef W3_MEMCHECK
        WRITE(30000+IAPROC,*) 'memcheck_____:', 'W3DIMA 3'
@@ -1223,6 +1208,8 @@
                  WADATS(IMOD)%TPMS  (NSEALM) ,                        &
                  WADATS(IMOD)%PHICE (NSEALM) ,                        &
                  WADATS(IMOD)%TAUICE(NSEALM,2),                       &
+                 WADATS(IMOD)%USSHX(NSEALM),                          &
+                 WADATS(IMOD)%USSHY(NSEALM),                          &
                  STAT=ISTAT )
       CHECK_ALLOC_STATUS ( ISTAT )
 !
@@ -1265,6 +1252,8 @@
       IF (  P2MSF(1).GT.0 ) WADATS(IMOD)%P2SMS  = UNDEF
       IF (  US3DF(1).GT.0 ) WADATS(IMOD)%US3D   = UNDEF
       IF (  USSPF(1).GT.0 ) WADATS(IMOD)%USSP   = UNDEF
+      WADATS(IMOD)%USSHX  = UNDEF
+      WADATS(IMOD)%USSHY  = UNDEF
 
 #ifdef W3_MEMCHECK
        WRITE(30000+IAPROC,*) 'memcheck_____:', 'W3DIMA 6'
@@ -2222,7 +2211,6 @@
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
 !
-#ifdef W3_CESMCOUPLED
       IF ( OUTFLAGS( 6, 14) ) THEN
           ALLOCATE ( WADATS(IMOD)%XUSSHX(NXXX), STAT=ISTAT )
           CHECK_ALLOC_STATUS ( ISTAT )
@@ -2234,7 +2222,6 @@
           ALLOCATE ( WADATS(IMOD)%XUSSHY(1), STAT=ISTAT )
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
-#endif
 !
       WADATS(IMOD)%XSXX    = UNDEF
       WADATS(IMOD)%XSYY    = UNDEF
@@ -2256,10 +2243,8 @@
       WADATS(IMOD)%XUSSP   = UNDEF
       WADATS(IMOD)%XTAUOCX = UNDEF
       WADATS(IMOD)%XTAUOCY = UNDEF
-#ifdef W3_CESMCOUPLED
       WADATS(IMOD)%XUSSHX   = UNDEF
       WADATS(IMOD)%XUSSHY   = UNDEF
-#endif
 !
       IF ( OUTFLAGS( 7, 1) ) THEN
           ALLOCATE ( WADATS(IMOD)%XABA(NXXX), STAT=ISTAT )
@@ -2982,10 +2967,8 @@
           USERO  => WADATS(IMOD)%USERO
 !
           WN     => WADATS(IMOD)%WN
-#ifdef W3_CESMCOUPLED
           USSHX  => WADATS(IMOD)%USSHX
           USSHY  => WADATS(IMOD)%USSHY
-#endif
 #ifdef W3_IC3
      IC3WN_R=> WADATS(IMOD)%IC3WN_R
      IC3WN_I=> WADATS(IMOD)%IC3WN_I
@@ -3322,10 +3305,8 @@
 !
           USERO  => WADATS(IMOD)%XUSERO
 !
-#ifdef W3_CESMCOUPLED
           USSHX   => WADATS(IMOD)%XUSSHX
           USSHY   => WADATS(IMOD)%XUSSHY
-#endif
 !
         END IF
 !

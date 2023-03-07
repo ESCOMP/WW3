@@ -2569,9 +2569,7 @@
                           TAUOCX, TAUOCY, WNMEAN
 #endif
 
-#ifdef W3_CESMCOUPLED
       USE W3ADATMD, ONLY: USSHX, USSHY
-#endif
 
 #ifdef W3_MPI
       USE W3GDATMD, ONLY: NK
@@ -2688,9 +2686,7 @@
                                           P2MSF(3) - P2MSF(2) + 1
           IF ( FLGRDALL( 6, 8) ) NRQMAX = NRQMAX + 2*NK
           IF ( FLGRDALL( 6,12) ) NRQMAX = NRQMAX + 2*NK
-#ifdef W3_CESMCOUPLED
           IF ( FLGRDALL( 6,14) ) NRQMAX = NRQMAX + 2
-#endif
 #endif
 !
 #ifdef W3_MPI
@@ -3784,7 +3780,6 @@
                 END IF
 #endif
 !
-#ifdef W3_CESMCOUPLED
 #ifdef W3_MPI
               IF ( FLGRDALL( 6, 14) ) THEN
                   IH     = IH + 1
@@ -3806,7 +3801,6 @@
 #endif
 #ifdef W3_MPI
                 END IF
-#endif
 #endif
 !
 #ifdef W3_MPI
@@ -5216,7 +5210,6 @@
                   END IF
 #endif
 !
-#ifdef W3_CESMCOUPLED
 #ifdef W3_MPI
                 IF ( FLGRDALL( 6, 14) ) THEN
                     IH     = IH + 1
@@ -5238,7 +5231,6 @@
 #endif
 #ifdef W3_MPI
                   END IF
-#endif
 #endif
 !
 #ifdef W3_MPI

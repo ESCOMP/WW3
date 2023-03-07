@@ -81,10 +81,8 @@
 !      FLCUR     Log.  Public   Flag for current input.
 !      FLWIND    Log.  Public   Flag for wind input.
 !      FLICE     Log.  Public   Flag for ice input.
-#ifdef W3_CESMCOUPLED
 !      HSL       R.A.  Public   Depth of a surface layer over which Stokes
 !                               drift is averaged
-#endif
 !      FLTAUA    Log.  Public   Flag for atmospheric momentum input
 !      FLRHOA    Log.  Public   Flag for air density input
 !      INFLAGS1  L.A.  Public   Array consolidating the above six
@@ -207,9 +205,7 @@
          REAL, POINTER         :: CYTIDE(:,:,:,:)
          REAL, POINTER         :: WLTIDE(:,:,:,:)
 #endif
-#ifdef W3_CESMCOUPLED
-        REAL, POINTER         :: HSL(:,:)
-#endif
+         REAL, POINTER         :: HSL(:,:)
          LOGICAL               :: IINIT
 #ifdef W3_WRST
          LOGICAL               :: WRSTIINIT=.FALSE.
@@ -260,9 +256,7 @@
       LOGICAL, POINTER        ::  FLLEVTIDE, FLCURTIDE,  &
                                   FLLEVRESI, FLCURRESI
 #endif
-#ifdef W3_CESMCOUPLED
       REAL   , POINTER        :: HSL(:,:)
-#endif
 !/
       CONTAINS
 !/ ------------------------------------------------------------------- /
@@ -714,10 +708,8 @@
           CHECK_ALLOC_STATUS ( ISTAT )
         END IF
 !
-#ifdef W3_CESMCOUPLED
         ALLOCATE ( INPUTS(IMOD)%HSL(NX,NY), STAT=ISTAT )
         CHECK_ALLOC_STATUS ( ISTAT )
-#endif
 !
       INPUTS(IMOD)%IINIT  = .TRUE.
 !
@@ -1023,9 +1015,7 @@
               ICEI   => INPUTS(IMOD)%ICEI
               BERGI  => INPUTS(IMOD)%BERGI
             END IF
-#ifdef W3_CESMCOUPLED
           HSL    => INPUTS(IMOD)%HSL
-#endif
 !
           IF ( FLTAUA  ) THEN
               UX0    => INPUTS(IMOD)%UX0
