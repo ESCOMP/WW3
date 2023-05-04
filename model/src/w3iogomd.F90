@@ -1219,13 +1219,11 @@
                           ICPRT, DTPRT, WSCUT, NOSWLL, FLOGRD, FLOGR2,&
                           NOGRP, NGRPP
       USE W3ADATMD, ONLY: NSEALM
-#ifdef W3_CESMCOUPLED
       ! USSHX, USSHY : surface layer (SL) averaged SD
       ! HSL          : surface layer depth (1/5 of the mixed layer depth
       !                from the coupler)
       USE W3ADATMD, ONLY: USSHX, USSHY
       USE W3IDATMD, ONLY: HSL
-#endif
 #ifdef W3_S
       USE W3SERVMD, ONLY: STRACE
 #endif
@@ -1284,14 +1282,12 @@
       REAL                       USSCO, FT1
       REAL, SAVE              :: HSMIN = 0.01
       LOGICAL                 :: FLOLOC(NOGRP,NGRPP)
-#ifdef W3_CESMCOUPLED
       ! SWW: angle between wind and waves
       ! LHSL: local surface layer depth
       REAL                    :: SWW
       REAL                    :: LHSL
       ! tmp variable for surface layer averaged Stokes drift
       REAL                    :: USSCOH
-#endif
 !/
 !/ ------------------------------------------------------------------- /
 !/
@@ -1414,10 +1410,8 @@
       THP1   = UNDEF
       ETUSCX  = 0.
       ETUSCY  = 0.
-#ifdef W3_CESMCOUPLED
       USSHX  = 0.
       USSHY  = 0.
-#endif
 !
 ! 2.  Integral over discrete part of spectrum ------------------------ *
 !
@@ -1543,12 +1537,16 @@
             TPMS(JSEA) = TPI/SIG(IK)
             END IF
 
-#ifdef W3_CESMCOUPLED
-! Get surface layer depth
-          IX    = MAPSF(ISEA,1)
-          IY    = MAPSF(ISEA,2)
-          LHSL  = HSL(IX,IY)      ! depth over which SD is averaged
-#endif
+          IF (LMPENABLED) then
+            IF (HSLMODE.EQ.0) then
+              LHSL = 10.0 ! a constant value for testing purposes
+            ELSE
+              ! Get surface layer depth from coupler
+              IX    = MAPSF(ISEA,1)
+              IY    = MAPSF(ISEA,2)
+              LHSL  = HSL(IX,IY)      ! depth over which SD is averaged
+              END IF
+            END IF
 
 !
 ! Directional moments in the last freq. band
@@ -1589,14 +1587,14 @@
             USSCO=FKD*SIG(IK)*WN(IK,ISEA)*COSH(2.*KD)
             BHD(JSEA) = BHD(JSEA) +                             &
                 GRAV*WN(IK,ISEA) * EBD(IK,JSEA) / (SINH(2.*KD))
-#ifdef W3_CESMCOUPLED
-            USSCOH=0.5*FKD*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL*COSH(2.*KD)
-#endif
+            IF (LMPENABLED) THEN
+              USSCOH=0.5*FKD*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL*COSH(2.*KD)
+              ENDIF
           ELSE
             USSCO=FACTOR*SIG(IK)*2.*WN(IK,ISEA)
-#ifdef W3_CESMCOUPLED
-            USSCOH=FACTOR*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL
-#endif
+            IF (LMPENABLED) THEN
+              USSCOH=FACTOR*SIG(IK)*(1.-EXP(-2.*WN(IK,ISEA)*LHSL))/LHSL
+              ENDIF
             END IF
 !
           ABXX(JSEA)   = MAX ( 0. , ABXX(JSEA) ) * FACTOR
@@ -1612,10 +1610,10 @@
 !
           USSX(JSEA)  = USSX(JSEA) + ABX(JSEA)*USSCO
           USSY(JSEA)  = USSY(JSEA) + ABY(JSEA)*USSCO
-#ifdef W3_CESMCOUPLED
-          USSHX(JSEA) = USSHX(JSEA) + ABX(JSEA)*USSCOH
-          USSHY(JSEA) = USSHY(JSEA) + ABY(JSEA)*USSCOH
-#endif
+          IF (LMPENABLED) THEN
+            USSHX(JSEA) = USSHX(JSEA) + ABX(JSEA)*USSCOH
+            USSHY(JSEA) = USSHY(JSEA) + ABY(JSEA)*USSCOH
+            ENDIF
 !
 ! Fills the 3D Stokes drift spectrum array
 !  ! The US3D Stokes drift specrum array is now calculated in a
@@ -1913,11 +1911,17 @@
 !
       DO JSEA=1, NSEAL
         CALL INIT_GET_ISEA(ISEA, JSEA)
-#ifdef W3_CESMCOUPLED
-        IX = MAPSF(ISEA,1)
-        IY = MAPSF(ISEA,2)
-        LHSL = HSL(IX,IY)     ! depth over which SD is averaged
-#endif
+
+        IF (LMPENABLED) then
+          IF (HSLMODE.EQ.0) then
+            LHSL = 10.0 ! a constant value for testing purposes
+          ELSE
+            ! Get surface layer depth from coupler
+            IX    = MAPSF(ISEA,1)
+            IY    = MAPSF(ISEA,2)
+            LHSL  = HSL(IX,IY)      ! depth over which SD is averaged
+            END IF
+          END IF
 !
 ! 3.a Directional mss parameters
 !     NB: the slope PDF is proportional to ell1=ETYY*EC2-2*ETXY*ECS+ETXX*ES2 = C*EC2-2*B*ECS+A*ES2
@@ -1952,17 +1956,18 @@
 !
 !       USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
 !       USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
-#if defined(W3_CESMCOUPLED) || defined(W3_SDTAIL)
+
         ! Add tail contribution for surface and layer averaged Stokes drift
-        USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
-        USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
-        USSHX(JSEA) = USSHX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
-          *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
-          /6./WN(NK,ISEA)/LHSL
-        USSHY(JSEA)  = USSHY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
-          *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
-          /6./WN(NK,ISEA)/LHSL
-#endif
+        IF (LMPENABLED.and.SDTAIL) then
+          USSX(JSEA)  = USSX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
+          USSY(JSEA)  = USSY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
+          USSHX(JSEA) = USSHX(JSEA) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)     &
+            *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
+            /6./WN(NK,ISEA)/LHSL
+          USSHY(JSEA)  = USSHY(JSEA) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)    &
+            *(1.-(1.-4.*LHSL*WN(NK,ISEA))*EXP(-2.*WN(NK,ISEA)*LHSL))    &
+            /6./WN(NK,ISEA)/LHSL
+          END IF
         UBS(JSEA) = UBS(JSEA) + FTWL * EBAND/GRAV
         END DO
 !
@@ -2646,9 +2651,7 @@
                           TH1M, STH1M, TH2M, STH2M, HSIG, PHICE, TAUICE,&
                           STMAXE, STMAXD, HMAXE, HCMAXE, HMAXD, HCMAXD,&
                           USSP, TAUOCX, TAUOCY
-#ifdef W3_CESMCOUPLED
       USE W3ADATMD, ONLY: USSHX, USSHY
-#endif
 !/
       USE W3ODATMD, ONLY: NOGRP, NGRPP, IDOUT, UNDEF, NDST, NDSE,     &
                           FLOGRD, IPASS => IPASS1, WRITE => WRITE1,   &
@@ -3023,12 +3026,10 @@
                                      TAUOCX(ISEA) = UNDEF
                                      TAUOCY(ISEA) = UNDEF
                   END IF
-#ifdef W3_CESMCOUPLED
                 IF ( FLOGRD( 6, 14) ) THEN
                                      USSHX (ISEA) = UNDEF
                                      USSHY (ISEA) = UNDEF
                   END IF
-#endif
 !
                 IF ( FLOGRD( 7, 1) ) THEN
                                      ABA   (ISEA) = UNDEF
@@ -3352,11 +3353,9 @@
                   ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 13 ) THEN
                     WRITE ( NDSOG ) TAUOCX(1:NSEA)
                     WRITE ( NDSOG ) TAUOCY(1:NSEA)
-#ifdef W3_CESMCOUPLED
                   ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 14 ) THEN
                     WRITE ( NDSOG ) USSHX(1:NSEA)
                     WRITE ( NDSOG ) USSHY(1:NSEA)
-#endif
 !
 !     Section 7)
 !
@@ -3698,13 +3697,11 @@
                                                        TAUOCX(1:NSEA)
                     READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
                                                        TAUOCY(1:NSEA)
-#ifdef W3_CESMCOUPLED
                   ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 14 ) THEN
                     READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
                                                        USSHX(1:NSEA)
                     READ (NDSOG,END=801,ERR=802,IOSTAT=IERR)         &
                                                        USSHY(1:NSEA)
-#endif
 
 !
 !     Section 7)
