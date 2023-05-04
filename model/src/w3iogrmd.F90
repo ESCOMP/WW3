@@ -1095,6 +1095,17 @@
                FTF, FTWN, FTTR, FTWL, FACTI1, FACTI2, FACHFA, FACHFE
         END IF
 
+! --------------
+      IF ( WRITE ) THEN
+          WRITE (NDSM)                                                &
+                LMPENABLED, SDTAIL, HSLMODE
+        ELSE
+          READ (NDSM,END=801,ERR=802,IOSTAT=IERR)                     &
+                LMPENABLED, SDTAIL, HSLMODE
+        END IF
+
+! --------------
+
 #ifdef W3_DEBUGIOGR
      WRITE(740+IAPROC,*) 'W3IOGR, step 10'
      FLUSH(740+IAPROC)
