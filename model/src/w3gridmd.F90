@@ -2992,6 +2992,7 @@ CONTAINS
     ENDIF
     USSP_TAIL = STK_TAIL
 
+    USSP_WN = 0.0 ! initialize to 0s
     DO J=1,USSPF(2)
       USSP_WN(j) = STK_WN(J)
     ENDDO
