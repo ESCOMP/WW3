@@ -475,6 +475,8 @@ $                             USSP : First index (default is 1, should always be
 $                            IUSSP : Last index (must be <= than NK and should be
 $                                               between 3 and ~10 with the tradeoff
 $                                               between accuracy and resources)
+$                           STK_TAIL : Flag to turn on tail contribution.
+$                                       (to be added to the last band.)
 $                           STK_WN : List of wavenumbers (size of IUSSP)
 $                           e.g.: USSP = 1, IUSSP=3, STK_WN = 0.04, 0.11, 0.33
 $                                 provides 3 partitions of both x & y component,

@@ -307,8 +307,7 @@ CONTAINS
     USE W3GDATMD, ONLY: NX, NY, NSEA, NSEAL, NSPEC, MAPSTA, MAPST2, &
          GNAME, FILEXT, GTYPE, UNGTYPE
     USE W3TRIAMD, ONLY: SET_UG_IOBP
-    USE W3WDATMD, only : DINIT, VA, TIME, TLEV, TICE, TRHO, ICE, UST
-    USE W3WDATMD, only : USTDIR, ASF, FPIS, ICEF, TIC1, TIC5, WLV
+    USE W3WDATMD
 #ifdef W3_WRST
     USE W3IDATMD, ONLY: WXN, WYN, W3SETI
     USE W3IDATMD, ONLY: WXNwrst, WYNwrst
@@ -338,6 +337,7 @@ CONTAINS
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
 #endif
+    !todo use w3odatmd, only: use_user_restname, user_restfname, ndso
     !
     IMPLICIT NONE
     !
@@ -470,6 +470,50 @@ CONTAINS
     if (present(filename)) then ! only when restart_nc and restart_from_binary=true
       open (ndsr,file=trim(filename),form='unformatted', convert=file_endian, &
            access='stream',iostat=ierr, status='old',action='read')
+    !todo elseif (use_user_restname) then
+    !todo   ierr = -99
+    !todo   if (.not. write) then
+    !todo     if (runtype == 'initial') then
+    !todo       if (len_trim(initfile) == 0) then
+    !todo         ! no IC file, use startup option
+    !todo         goto 800
+    !todo       else
+    !todo         ! IC file exists - use it
+    !todo         fname = trim(initfile)
+    !todo       end if
+    !todo     else
+    !todo       call set_user_timestring(time,user_timestring)
+    !todo       fname = trim(user_restfname)//trim(user_timestring)
+    !todo       inquire( file=trim(fname), exist=exists)
+    !todo       if (.not. exists) then
+    !todo          fname = trim(initfile)
+    !todo          inquire( file=trim(fname), exist=exists)
+    !todo          if (.not. exists) then
+    !todo             call extcde (60, msg="required initial/restart file " // trim(fname) // " does not exist")
+    !todo          endif
+    !todo       end if
+    !todo     end if
+    !todo   else
+    !todo     call set_user_timestring(time,user_timestring)
+    !todo     fname = trim(user_restfname)//trim(user_timestring)
+    !todo   end if
+    !todo   ! write out filename
+    !todo   if (iaproc == naprst) then
+    !todo     IF ( WRITE ) THEN
+    !todo       write (ndso,'(a)') 'WW3: writing restart file '//trim(fname)
+    !todo     else
+    !todo       write (ndso,'(a)') 'WW3: reading initial/restart file '//trim(fname)
+    !todo     end if
+    !todo   end if
+    !todo   if ( write ) then
+    !todo     IF ( .NOT.IOSFLG .OR. IAPROC.EQ.NAPRST )        &
+    !todo          open (ndsr,file=trim(fname), form='unformatted', convert=file_endian,       &
+    !todo          ACCESS='STREAM',ERR=800,IOSTAT=IERR)
+    !todo   ELSE  ! READ
+    !todo     open (ndsr, file=trim(fname), form='unformatted', convert=file_endian,       &
+    !todo          ACCESS='STREAM',ERR=800,IOSTAT=IERR,           &
+    !todo          STATUS='OLD',ACTION='READ')
+    !todo   END IF
     else
       IF (LEN_TRIM(FNMRST) .EQ. 0) THEN
         FNMPRE_LOCAL = FNMPRE

@@ -4264,7 +4264,7 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     USE CONSTANTS, ONLY: TPIINV, GRAV, TPI
     USE W3GDATMD,  ONLY: DDEN, DSII, XFR, SIG, NK, NTH, NSEAl,    &
-         ECOS, ESIN, US3DF, USSPF, USSP_WN
+         ECOS, ESIN, US3DF, USSPF, USSP_TAIL, USSP_WN
     USE W3ADATMD,  ONLY: CG, WN, DW
     USE W3ADATMD,  ONLY: USSX, USSY,  US3D, USSP
     USE W3ODATMD, ONLY: IAPROC, NAPROC
@@ -4288,10 +4288,11 @@ CONTAINS
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
 #endif
-    REAL                    :: FACTOR, FKD,KD
+    REAL                    :: FACTOR, FACTOR2, FKD, KD
     REAL                    :: ABX(NSEAL), ABY(NSEAL), USSCO
     REAL                    :: MINDIFF
     INTEGER                 :: Spc2Bnd(NK)
+    REAL                    :: ETUSCX(NSEAL), ETUSCY(NSEAL)
     !/
     !/ ------------------------------------------------------------------- /
     !/
@@ -4357,7 +4358,7 @@ CONTAINS
       !
       !
 #ifdef W3_OMPG
-      !$OMP PARALLEL DO PRIVATE(JSEA,ISEA,FACTOR,KD,FKD,USSCO,MINDIFF,IB)
+      !$OMP PARALLEL DO PRIVATE(JSEA,ISEA,FACTOR,FACTOR2,KD,FKD,USSCO,MINDIFF,IB)
 #endif
       !
       DO JSEA=1, NSEAL
@@ -4390,16 +4391,27 @@ CONTAINS
           ! Match each spectral component to the nearest partition
           MINDIFF=1.e8
           Spc2BND(IK) = 1
-          MINDIFF=abs(USSP_WN(1)-WN(IK,ISEA))
-          DO IB=2,USSPF(2)
-            IF (MinDiff .gt. abs(USSP_WN(IB)-WN(IK,ISEA))) then
-              Spc2BND(IK) = IB
-              MinDiff = abs(USSP_WN(IB)-WN(IK,ISEA))
-            ENDIF
-          ENDDO
+          IF (USSPF(1).GE.1) THEN
+            MINDIFF=abs(USSP_WN(1)-WN(IK,ISEA))
+            DO IB=2,USSPF(1)
+              IF (MINDIFF .gt. abs(USSP_WN(IB)-WN(IK,ISEA))) then
+                Spc2BND(IK) = IB
+                MINDIFF = abs(USSP_WN(IB)-WN(IK,ISEA))
+              ENDIF
+            ENDDO
+          ENDIF
           !Put spectral energey into whichever band central wavenumber fits in
           USSP(JSEA,Spc2Bnd(IK))    =  USSP(JSEA,Spc2Bnd(IK)) + ABX(JSEA)*USSCO
           USSP(JSEA,NK+Spc2BND(IK)) =  USSP(JSEA,NK+Spc2Bnd(IK)) + ABY(JSEA)*USSCO
+
+          ! add tail contribution to the last band (if requested)
+          IF (USSP_TAIL .and. IK.EQ.NK) THEN
+            FACTOR2       = SIG(IK)**5/(GRAV**2)/DSII(IK)
+            ETUSCX(JSEA)  = ABX(JSEA)*FACTOR*FACTOR2
+            ETUSCY(JSEA)  = ABY(JSEA)*FACTOR*FACTOR2
+            USSP(JSEA,USSPF(2))    =  USSP(JSEA,USSPF(2)) + 2*GRAV*ETUSCX(JSEA)/SIG(NK)
+            USSP(JSEA,NK+USSPF(2)) =  USSP(JSEA,NK+USSPF(2)) + 2*GRAV*ETUSCY(JSEA)/SIG(NK)
+          ENDIF
         ENDIF
       END DO
 #ifdef W3_OMPG

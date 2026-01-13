@@ -86,15 +86,15 @@ contains
 
 #ifdef CESMCOUPLED
     ! TODO: needs testing
-    wav_pio_subsystem => shr_pio_getiosys(inst_name)
-    pio_iotype =  shr_pio_getiotype(inst_name)
-    if ((pio_iotype==PIO_IOTYPE_NETCDF).or.(pio_iotype==PIO_IOTYPE_PNETCDF)) then
-      nmode0 = shr_pio_getioformat(inst_name)
-    else
-      nmode0 = 0
-    endif
+    !todo wav_pio_subsystem => shr_pio_getiosys(inst_name)
+    !todo pio_iotype =  shr_pio_getiotype(inst_name)
+    !todo if ((pio_iotype==PIO_IOTYPE_NETCDF).or.(pio_iotype==PIO_IOTYPE_PNETCDF)) then
+    !todo   nmode0 = shr_pio_getioformat(inst_name)
+    !todo else
+    !todo   nmode0 = 0
+    !todo endif
 
-    call pio_seterrorhandling(wav_pio_subsystem, PIO_RETURN_ERROR)
+    !todo call pio_seterrorhandling(wav_pio_subsystem, PIO_RETURN_ERROR)
 #else
     my_task = iaproc - 1
     master_task = 0

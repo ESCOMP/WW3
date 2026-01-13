@@ -713,6 +713,7 @@ MODULE W3GDATMD
     INTEGER, POINTER :: REFLD(:,:)  ! reflection direction
 #endif
     INTEGER          :: E3DF(3,5), P2MSF(3), US3DF(3), USSPF(2) ! freq. indices for 3D output
+    LOGICAL          :: USSP_TAIL ! Flag to turn on tail contrib. for partitioned stokes drift
     REAL             :: USSP_WN(25) !Max set to 25 decay scales.
     !
     TYPE(T_GSU) :: GSU ! Grid search utility object
@@ -1102,6 +1103,7 @@ MODULE W3GDATMD
   INTEGER, POINTER :: ICLOSE
   INTEGER, POINTER        :: NX, NY, NSEA, NSEAL, TRFLAG
   INTEGER, POINTER        :: E3DF(:,:), P2MSF(:), US3DF(:), USSPF(:)
+  LOGICAL, POINTER        :: USSP_TAIL
   REAL,    POINTER        :: USSP_WN(:)
 #ifdef W3_REF1
   REAL,    POINTER        :: REFLC(:,:)
@@ -2317,6 +2319,7 @@ CONTAINS
     P2MSF  => GRIDS(IMOD)%P2MSF
     US3DF  => GRIDS(IMOD)%US3DF
     USSPF  => GRIDS(IMOD)%USSPF
+    USSP_TAIL => GRIDS(IMOD)%USSP_TAIL
     USSP_WN => GRIDS(IMOD)%USSP_WN
     FFACBERG => GRIDS(IMOD)%FFACBERG
     !

@@ -1191,11 +1191,11 @@ CONTAINS
     !                                                 Module W3GDATMD
     IF ( WRITE ) THEN
       WRITE (NDSM)                                                &
-           E3DF, P2MSF, US3DF,USSPF, USSP_WN
+           E3DF, P2MSF, US3DF,USSPF, USSP_TAIL, USSP_WN
 #ifdef W3_ASCII
       WRITE (NDSA,*)                                              &
            'E3DF, P2MSF, US3DF,USSPF, USSP_WN:',                  &
-           E3DF, P2MSF, US3DF,USSPF, USSP_WN
+           E3DF, P2MSF, US3DF,USSPF, USSP_TAIL, USSP_WN
 #endif
     ELSE
       READ (NDSM,IOSTAT=IERR) E3DF, P2MSF, US3DF,USSPF, USSP_WN

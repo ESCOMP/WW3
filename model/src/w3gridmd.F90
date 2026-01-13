@@ -649,6 +649,8 @@ MODULE W3GRIDMD
        STH1MF, I1STH1M, I2STH1M,            &
        TH2MF, I1TH2M, I2TH2M,               &
        STH2MF, I1STH2M, I2STH2M
+  ! Flag to enable tail contribution to stokes drift partitions (last band only)
+  LOGICAL                 :: STK_TAIL
   ! STK_WN are the decays for Stokes drift partitions
   REAL                    :: STK_WN(25)
 
@@ -1122,7 +1124,7 @@ MODULE W3GRIDMD
        TRCKCMPR, PTM, PTFC, BTBET, ICNUMERICS
   NAMELIST /OUTS/ P2SF, I1P2SF, I2P2SF,                      &
        US3D, I1US3D, I2US3D,                    &
-       USSP, IUSSP, STK_WN,                     &
+       USSP, IUSSP, STK_TAIL, STK_WN,          &
        E3D, I1E3D, I2E3D,                       &
        TH1MF, I1TH1M, I2TH1M,                   &
        STH1MF, I1STH1M, I2STH1M,                &
@@ -2793,6 +2795,7 @@ CONTAINS
     I2US3D = NK
     USSP=0
     IUSSP=1
+    STK_TAIL=.FALSE.
     STK_WN(:)=0.0
     STK_WN(1)=TPI/100. !Set default decay of 100 m for Stokes drift
     TH1MF=0
@@ -3019,6 +3022,7 @@ CONTAINS
       WRITE(NDSE,*) "   specified in ww3_grid.inp to proceed "
       CALL EXTCDE( 31)
     ENDIF
+    USSP_TAIL = STK_TAIL
 
     USSP_WN = 0.0 ! initialize to 0s
     DO J=1,USSPF(2)
@@ -3030,6 +3034,7 @@ CONTAINS
     WRITE (NDSO,4972) US3DF(1:3)
     WRITE (NDSO,4973) E3DF(1:3,1)
     WRITE (NDSO,4974) USSPF(1:2)
+    WRITE (NDSO,4976) USSP_TAIL
     DO J=1,USSPF(2)
       WRITE(NDSO,4975) J,USSP_WN(J)
     ENDDO
@@ -6833,6 +6838,7 @@ CONTAINS
 4973 FORMAT ( '       Frequency spectrum          :',3I4)
 4974 FORMAT ( '       Partions of Uss             :',2I4)
 4975 FORMAT ( '       Partition wavenumber #',I2,'   : ',1F6.3)
+4976 FORMAT ( '       Tail contribution flag      :',L3)
 
     !
 4980 FORMAT (/'  Coastal / iceberg reflection  ',A/                   &

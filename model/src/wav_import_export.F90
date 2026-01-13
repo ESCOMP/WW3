@@ -105,7 +105,7 @@ contains
     ! Advertise import fields
     !--------------------------------
 
-    call fldlist_add(fldsToWav_num, fldsToWav, 'So_h'       )
+    !todo call fldlist_add(fldsToWav_num, fldsToWav, 'So_h'       )
     call fldlist_add(fldsToWav_num, fldsToWav, 'Si_ifrac'   )
     call fldlist_add(fldsToWav_num, fldsToWav, 'So_u'       )
     call fldlist_add(fldsToWav_num, fldsToWav, 'So_v'       )
@@ -142,7 +142,7 @@ contains
 
     if (cesmcoupled) then
       call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_lamult' )
-      call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_lasl' )
+      !todo call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_lasl' )
     else
       call fldlist_add(fldsFrWav_num, fldsFrWav, 'Sw_z0')
       ! coastal coupling
@@ -309,6 +309,9 @@ contains
     real(r4), allocatable   :: wxdata(:)      ! only needed if merge_import
     real(r4), allocatable   :: wydata(:)      ! only needed if merge_import
     character(len=*), parameter :: subname='(wav_import_export:import_fields)'
+#ifdef W3_CESMCOUPLED
+    character(len=*), parameter :: casename = ""
+#endif
     !---------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -341,16 +344,16 @@ contains
     ! ---------------
     ! INFLAGS1(1)
     ! ---------------
-    if (INFLAGS1(1)) then
-      TLN  = timen
+    !todo if (INFLAGS1(1)) then
+    !todo   TLN  = timen
 
-      WLEV(:,:) = def_value   ! water level
-      if (state_fldchk(importState, 'So_h')) then
-        call SetGlobalInput(importState, 'So_h', vm, global_data, rc)
-        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-        call FillGlobalInput(global_data, WLEV)
-      end if
-    endif
+    !todo   WLEV(:,:) = def_value   ! water level
+    !todo   if (state_fldchk(importState, 'So_h')) then
+    !todo     call SetGlobalInput(importState, 'So_h', vm, global_data, rc)
+    !todo     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    !todo     call FillGlobalInput(global_data, WLEV)
+    !todo   end if
+    !todo endif
 
     ! ---------------
     ! INFLAGS1(2) - ocn current fields
@@ -663,25 +666,25 @@ contains
         endif
       enddo
     end if
-    if (state_fldchk(exportState, 'Sw_lasl')) then
-      call state_getfldptr(exportState, 'Sw_lasl', sw_lasl, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
-      sw_lasl(:) = fillvalue
-      do jsea=1, nseal_cpl
-         isea = iaproc + (jsea-1)*naproc
-         ix  = mapsf(isea,1)
-         iy  = mapsf(isea,2)
-         if (mapsta(iy,ix) == 1) then
-            ! note: an arbitrary minimum value of 0.2 is set to avoid zero
-            !       Langmuir number which may result from zero surface friction
-            !       velocity but may cause unphysically strong Langmuir mixing
-            sw_lasl(jsea) = max(0.2, sqrt(UST(isea)*ASF(isea)*sqrt(dair/dwat) &
-                          / max(1.e-14, sqrt(USSHX(jsea)**2+USSHY(jsea)**2))))
-         else
-            sw_lasl(jsea)  = 1.e6
-         endif
-      enddo
-    end if
+    !todo if (state_fldchk(exportState, 'Sw_lasl')) then
+    !todo   call state_getfldptr(exportState, 'Sw_lasl', sw_lasl, rc=rc)
+    !todo   if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    !todo   sw_lasl(:) = fillvalue
+    !todo   do jsea=1, nseal_cpl
+    !todo      isea = iaproc + (jsea-1)*naproc
+    !todo      ix  = mapsf(isea,1)
+    !todo      iy  = mapsf(isea,2)
+    !todo      if (mapsta(iy,ix) == 1) then
+    !todo         ! note: an arbitrary minimum value of 0.2 is set to avoid zero
+    !todo         !       Langmuir number which may result from zero surface friction
+    !todo         !       velocity but may cause unphysically strong Langmuir mixing
+    !todo         sw_lasl(jsea) = max(0.2, sqrt(UST(isea)*ASF(isea)*sqrt(dair/dwat) &
+    !todo                       / max(1.e-14, sqrt(USSHX(jsea)**2+USSHY(jsea)**2))))
+    !todo      else
+    !todo         sw_lasl(jsea)  = 1.e6
+    !todo      endif
+    !todo   enddo
+    !todo end if
 
     ! surface stokes drift at history frequency
     if (state_fldchk(exportState, 'Sw_ustokes')) then

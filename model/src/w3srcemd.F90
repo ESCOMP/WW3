@@ -2090,7 +2090,6 @@ CONTAINS
       WRITE(740+IAPROC,*) '3 : sum(SPEC)=', sum(SPEC)
     END IF
 #endif
-
     IF ( INFLAGS2(4).AND.ICE.GT.0 ) THEN
       IF (.NOT. IC_NUMERICS ) THEN
         IF (IICEDISP) THEN

@@ -914,7 +914,7 @@ CONTAINS
     IDOUT( 6,11)  = 'Wave-ice energy flux'
     IDOUT( 6,12)  = 'Split Surface Stokes'
     IDOUT( 6,13)  = 'Tot wav-ocn mom flux'
-    IDOUT( 6,14)  = 'Stokes drift sfc ave'
+    IDOUT( 6,14)  = 'Turbulent Langmuir number'
     !
     ! 7) Wave-bottom layer
     !

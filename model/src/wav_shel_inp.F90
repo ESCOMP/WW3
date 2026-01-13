@@ -171,6 +171,7 @@ contains
     character(len=1024) :: fldrst=''
     character(len=80)   :: linein
     character(len=8)    :: words(7)=''
+    character(len=256)  :: filename
     logical             :: flflg, flhom, tflagi, prtfrm, flgnml, flh(-7:10)
     integer             :: time0(2), timen(2), ttime(2)
     character(len=80)   :: msg1
@@ -265,10 +266,11 @@ contains
     ! Read nml file if available
     !--------------------
 
-    inquire(file=trim(fnmpre)//"ww3_shel.nml", exist=flgnml)
+    filename = trim(fnmpre)//"wav_in"
+    inquire(file=trim(filename), exist=flgnml)
 
     if (flgnml) then
-      open(newunit=ndsi, file=trim(fnmpre)//"ww3_shel.nml", status='old', iostat=ierr)
+      open(newunit=ndsi, file=trim(filename), status='old', iostat=ierr)
 
       !--------------------
       ! Read namelist
@@ -523,10 +525,7 @@ contains
       !--------------------
 
       npts   = 0
-      notype = 6
-      if (w3_cou_flag) then
-        notype = 7
-      end if
+      notype = 7
       do j = 1, notype
 
         ! outpts(i)%ofiles(j)=ofiles(j)
@@ -967,10 +966,7 @@ contains
 
       call print_logmsg(740+IAPROC, '2.4 Output dates ',  w3_debuginit_flag)
       npts   = 0
-      notype = 6
-      if (w3_cou_flag) then
-        notype = 7
-      end if
+      notype = 7
       do j = 1, notype
         write(msg1,*)'J=', J, '/ NOTYPE=', NOTYPE
         call nextln ( comstr , ndsi , ndsen )
