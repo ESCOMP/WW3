@@ -2636,7 +2636,11 @@ CONTAINS
               ELSE IF ( do_point_output ) THEN
                 IF ( IAPROC .EQ. NAPPNT ) THEN
                   CALL W3IOPE ( VA )
-                  CALL W3IOPO ( 'WRITE', NDS(8), ITEST, IMOD )
+                  CALL W3IOPO ( 'WRITE', NDS(8), ITEST, IMOD &
+#ifdef W3_ASCII
+                          ,NDS(15)                           &
+#endif
+                          )
                 END IF
 
               ELSE IF ( do_track_output ) THEN
