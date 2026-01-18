@@ -62,6 +62,7 @@ set(pio_src
   wav_history_mod.F90
   wav_pio_mod.F90
   wav_restart_mod.F90
+  ${SRCROOT}/components/cdeps/share/shr_is_restart_fh_mod.F90
   wav_shr_mod.F90
   wav_kind_mod.F90
   wav_import_export.F90

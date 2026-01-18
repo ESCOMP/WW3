@@ -125,6 +125,7 @@ endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/src_list.cmake)
 
 list(APPEND ftn_src ${nuopc_mesh_cap_src})
+list(APPEND ftn_src ${pio_src})
 
 # Executables to build if NetCDF is found
 set(netcdf_programs ww3_ounf ww3_ounp ww3_bounc ww3_trnc ww3_prnc)
@@ -181,10 +182,6 @@ endif()
 if("MPI" IN_LIST switches)
   find_package(MPI REQUIRED COMPONENTS Fortran)
   set(LINK_MPI TRUE)
-endif()
-
-if("PIO" IN_LIST switches)
-  target_sources(ww3_lib PRIVATE ${pio_src})
 endif()
 
 # Handle PDLIB, SCRIP, SCRIPNC build files directly instead of through configuration file
