@@ -1462,6 +1462,12 @@ CONTAINS
         call print_memcheck(memunit, 'memcheck_____:'//' WW3_WAVE TIME LOOP 13')
         !
 #ifdef W3_PDLIB
+
+        IF (LPDLIB .and. .not. FLSOU .and. .not. FSSOURCE) THEN
+          B_JAC     = 0.
+          ASPAR_JAC = 0.
+        ENDIF
+
         IF (LPDLIB .and. FLSOU .and. FSSOURCE) THEN
 #endif
 
@@ -1492,6 +1498,8 @@ CONTAINS
           DO JSEA = 1, NP
 
             CALL INIT_GET_ISEA(ISEA, JSEA)
+
+            IF ((IOBP_LOC(JSEA).eq.1..or.IOBP_LOC(JSEA).eq. 3).and.IOBDP_LOC(JSEA).eq.1.and.IOBPA_LOC(JSEA).eq.0) THEN
 
             IX     = MAPSF(ISEA,1)
             IY     = MAPSF(ISEA,2)
@@ -1565,6 +1573,7 @@ CONTAINS
             WRITE(740+IAPROC,*) '     SHAVETOT=', SHAVETOT(JSEA)
             FLUSH(740+IAPROC)
 #endif
+          ENDIF 
           END DO ! JSEA
         END IF ! PDLIB
 #endif
@@ -2167,6 +2176,7 @@ CONTAINS
             !
             DO JSEA=1, NSEAL
               CALL INIT_GET_ISEA(ISEA, JSEA)
+
               IX     = MAPSF(ISEA,1)
               IY     = MAPSF(ISEA,2)
               DELA=1.
