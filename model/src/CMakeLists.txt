@@ -183,6 +183,10 @@ if("MPI" IN_LIST switches)
   set(LINK_MPI TRUE)
 endif()
 
+if("PIO" IN_LIST switches)
+  target_sources(ww3_lib PRIVATE ${pio_src})
+endif()
+
 # Handle PDLIB, SCRIP, SCRIPNC build files directly instead of through configuration file
 if("PDLIB" IN_LIST switches)
   list(APPEND ftn_src ${pdlib_src})
