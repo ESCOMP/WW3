@@ -75,7 +75,17 @@ if("PDLIB" IN_LIST switches)
     #find_package(ParMETIS REQUIRED)
     #target_link_libraries(ww3_lib PUBLIC ParMETIS::ParMETIS)
   else()
-     message(FATAL_ERROR "PDLIB requires METIS or SCOTCH library for domain decomposition")
+    message(FATAL_ERROR "PDLIB requires METIS or SCOTCH library for domain decomposition")
+ endif()
+endif()
+
+if("SCRIP" IN_LIST switches)
+  target_sources(ww3_lib PRIVATE ${scrip_src})
+endif()
+
+if("SCRIPNC" IN_LIST switches OR "OASIS" IN_LIST switches OR "TRKNC" IN_LIST switches OR "BIN2NC" IN_LIST switches)
+  if(NOT NetCDF_Fortran_FOUND)
+	  message(FATAL_ERROR "Cannot build SCRIPNC, OASIS, TRKNC, or BIN2NC without NetCDF")
   endif()
 endif()
 
