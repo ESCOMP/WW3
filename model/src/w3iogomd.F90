@@ -2692,9 +2692,9 @@ CONTAINS
 #endif
       IF ( WRITE ) THEN
         OPEN (NDSOG,FILE=FNMPRE(:J)//'out_grd.'//FILEXT(:I),    &
-             form='UNFORMATTED', convert=file_endian,ERR=800,IOSTAT=IERR)
+             form ='UNFORMATTED', convert=file_endian,ERR=800,IOSTAT=IERR)
 #ifdef W3_ASCII
-        OPEN (NDSOA,FILE=FNMPRE(:J)//trim(fname)//'.txt',    &
+        OPEN (NDSOA,FILE=FNMPRE(:J)//'out_grd.'//FILEXT(:I)//'.txt',    &
              form ='FORMATTED',ERR=800,IOSTAT=IERR)
 #endif
       ELSE
@@ -2777,6 +2777,10 @@ CONTAINS
       IF ( WRITE ) THEN
         OPEN (NDSOG,FILE=FNMPRE(:J)//TIMETAG//'.out_grd.'  &
              //FILEXT(:I),form='UNFORMATTED', convert=file_endian,ERR=800,IOSTAT=IERR)
+#ifdef W3_ASCII
+        OPEN (NDSOA,FILE=FNMPRE(:J)//TIMETAG//'.out_grd.'  &
+             //FILEXT(:I)//'.txt',form='FORMATTED',ERR=800,IOSTAT=IERR)
+#endif
       ELSE
         OPEN (NDSOG,FILE=FNMPRE(:J)//'out_grd.'//FILEXT(:I),    &
              form='UNFORMATTED', convert=file_endian,ERR=800,IOSTAT=IERR,STATUS='OLD')

@@ -2610,7 +2610,11 @@ CONTAINS
 #ifdef W3_SBS
                   IF ( J .EQ. 1 ) THEN
 #endif
-                    CALL W3IOGO( 'WRITE', NDS(7), ITEST, IMOD )
+                    CALL W3IOGO( 'WRITE', NDS(7), ITEST, IMOD &
+#ifdef W3_ASCII
+                            ,NDS(14)                          &
+#endif
+                            )
 #ifdef W3_SBS
                   ENDIF
 #endif

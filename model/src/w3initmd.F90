@@ -3311,6 +3311,20 @@ CONTAINS
 #endif
         END IF
         !
+        IF ( FLGRDALL( 8, 6) ) THEN
+          IH     = IH + 1
+          IT     = IT + 1
+          CALL MPI_SEND_INIT (QKK  (1),NSEALM , MPI_REAL, IROOT,   &
+               IT, MPI_COMM_WAVE, IRQGO(IH), IERR)
+#endif
+#ifdef W3_MPIT
+          WRITE (NDST,9011) IH, ' 8/06', IROOT, IT, IRQGO(IH), IERR
+#endif
+#ifdef W3_MPI
+        END IF
+#endif
+        !
+#ifdef W3_MPI
         IF ( FLGRDALL( 9, 1) ) THEN
           IH     = IH + 1
           IT     = IT + 1
@@ -4397,6 +4411,20 @@ CONTAINS
 #endif
           END IF
           !
+          IF ( FLGRDALL( 8, 6) ) THEN
+            IH     = IH + 1
+            IT     = IT + 1
+            CALL MPI_RECV_INIT (QKK  (I0),1,WW3_FIELD_VEC, IFROM, IT,  &
+                 MPI_COMM_WAVE, IRQGO2(IH), IERR )
+#endif
+#ifdef W3_MPIT
+            WRITE (NDST,9011) IH, ' 8/06', IFROM, IT, IRQGO2(IH), IERR
+#endif
+#ifdef W3_MPI
+          END IF
+#endif
+          !
+#ifdef W3_MPI
           IF ( FLGRDALL( 9, 1) ) THEN
             IH     = IH + 1
             IT     = IT + 1

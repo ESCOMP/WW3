@@ -109,11 +109,10 @@ $                                     1 : Deep water DIA
 $                                     2 : Deep water DIA with scaling
 $                                     3 : Shallow water DIA
 $                           TAILNL : Parametric tail power.
-$        GQMNF1, GQMNT1, GQMNQ_OM2 : Gaussian quadrature resolution
-$                        GQMTHRSAT : Threshold on saturation for SNL calculation
-$                        GQMTHRCOU : Threshold for filter on coupling coefficient
-$   GQAMP1, GQAMP2, GQAMP3, GQAMP4 : Amplification factors
-$
+$                           GQMNF1, GQMNT1, GQMNQ_OM2 : Gaussian quadrature resolution
+$                           GQMTHRSAT : Threshold on saturation for SNL calculation
+$                           GQMTHRCOU : Threshold for filter on coupling coefficient
+$                           GQAMP1, GQAMP2, GQAMP3, GQAMP4 : Amplification factors
 $   Exact interactions  : Namelist SNL2
 $                           IQTYPE : Type of depth treatment
 $                                     1 : Deep water
