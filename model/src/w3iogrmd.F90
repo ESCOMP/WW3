@@ -1532,17 +1532,6 @@ CONTAINS
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
            DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK:',          &
-           ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,     &
-           TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,        &
-           ZZ0RAT, SSDSC,                                    &
-           SSDSISO, SSDSBR, SSDSBT, SSDSBM, SSDSP,           &
-           SSDSCOS, SSDSDTH, WWNMEANP, WWNMEANPTAIL,SSTXFTF, &
-           SSTXFTFTAIL, SSTXFTWN, SSTXFTF, SSTXFTWN,         &
-           SSDSBRF1, SSDSBRF2, SSDSBRFDF,SSDSBCK, SSDSABK,   &
-           SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA,           &
-           SSDSHCK,                                          &
-           IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
-           DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK
 #endif
       IF (SINTAILPAR(1).GT.0.5) THEN
         WRITE (NDSM) DELUST, DELTAIL, DELTAUW, DELU, DELALP, &
