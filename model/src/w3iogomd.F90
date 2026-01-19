@@ -3584,6 +3584,10 @@ CONTAINS
             ELSE IF ( IFI .EQ. 6 .AND. IFJ .EQ. 14 ) THEN
               WRITE ( NDSOG ) USSHX(1:NSEA)
               WRITE ( NDSOG ) USSHY(1:NSEA)
+#ifdef W3_ASCII
+              WRITE ( NDSOA,* ) 'USSHX:', USSHX(1:NSEA)
+              WRITE ( NDSOA,* ) 'USSHY:', USSHY(1:NSEA)
+#endif
               !
               !     Section 7)
               !
