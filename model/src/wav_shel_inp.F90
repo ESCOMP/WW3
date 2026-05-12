@@ -107,7 +107,7 @@ contains
   subroutine read_shel_config(mpi_comm, mds, time0_overwrite, timen_overwrite)
 
     use wav_shr_flags
-    use mpi_f08        , only : MPI_COMM
+    use mpi_f08        , only : MPI_COMM_T => MPI_COMM
     use w3nmlshelmd    , only : nml_domain_t, nml_input_t, nml_output_type_t
     use w3nmlshelmd    , only : nml_output_date_t, nml_output_path_t, nml_homog_count_t, nml_homog_input_t
     use w3nmlshelmd    , only : w3nmlshel
@@ -139,7 +139,7 @@ contains
     ! local parameters
     integer, parameter  :: nhmax =    200
 
-    type(MPI_COMM)            :: mpicomm_f08
+    type(MPI_COMM_T)          :: mpicomm_f08
     type(nml_domain_t)       :: nml_domain
     type(nml_input_t)        :: nml_input
     type(nml_output_type_t)  :: nml_output_type
