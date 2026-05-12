@@ -605,6 +605,7 @@ CONTAINS
 #endif
 #ifdef W3_MPI
     LOGICAL                 :: SBSED
+#endif
     LOGICAL                 :: CPLWRTFLG
 #ifdef W3_SEC1
     INTEGER                 :: ISEC1
