@@ -199,10 +199,14 @@ MODULE W3GDATMD
   !                               Default is 1.0, meaning that 100% ice
   !                               concentration result in zero source term
   !                               If set to 0.0, then ice has no direct impact on Sln / Sin / Snl / Sds
-  !      IC3PARS   R.A.  Public   various parameters for use in IC4, handled as
+  !      IC3PARS   R.A.  Public   various parameters for use in IC3, handled as
   !                               an array for simplicity
-  !      IC4_KI    R.A.  Public   KI (dissipation rate) values for use in IC4
-  !      IC4_FC    R.A.  Public   FC (frequency bin separators) for use in IC4
+  !      IC4_KI    R.A.  Public   KI (dissipation rate) values for use in IC4M6
+  !      IC4_FC    R.A.  Public   FC (frequency bin separators) for use in IC4M6
+  !      IC4_CN    R.A.  Public   Coefficients for use in IC4M2
+  !      IC4_FMIN  Real  Public   Minimum frequency below which ki is set to 
+  !                               some background level dissipation (for S_ice)
+  !      IC4_KIBK  Real  Public   Low, background level dissipation (for S_ice)
   !      PFMOVE    Real  Public   Tunable parameter in GSE correction
   !                               for moving grids.
   !      GRIDSHIFT Real  Public   Grid offset for multi-grid w/SCRIP
@@ -430,6 +434,17 @@ MODULE W3GDATMD
   !      KDCON     Real  Public   Conversion factor for relative depth.
   !      KDMN      Real  Public   Minimum relative depth.
   !      SNLSn     Real  Public   Constants in shallow water factor.
+  !      IQTPE     Int.  Public   Type of depth treatment
+  !                               -2 : Deep water GQM with scaling
+  !                                1 : Deep water DIA
+  !                                2 : Deep water DIA with scaling
+  !                                3 : Finite water depth DIA
+  !      GQNF1     Int.  Public   Gaussian quadrature resolution
+  !      GQNT1     Int.  Public   Gaussian quadrature resolution
+  !      GQNNQ_OM2 Int.  Public   Gaussian quadrature resolution
+  !      GQTHRSAT  Real  Public   Threshold on saturation for SNL calculation
+  !      GQTHRCOU  Real  Public   Threshold for filter on coupling coefficient
+  !      GQAMP     R.A.  Public   Amplification factors
   !                                                             (!/NL2)
   !      IQTPE     Int.  Public   Type of depth treatment
   !                                1 : Deep water
@@ -605,7 +620,7 @@ MODULE W3GDATMD
        IPARS = -1, NAUXGR
   !
 #ifdef W3_IC4
-  INTEGER, PARAMETER      :: NIC4=10
+  INTEGER, PARAMETER      :: NIC4=16 ,  NIC42=5
 #endif
   INTEGER, PARAMETER      :: RLGTYPE = 1
   INTEGER, PARAMETER      :: CLGTYPE = 2
@@ -655,7 +670,7 @@ MODULE W3GDATMD
          DTMIN, DMIN, CTMAX, FICE0, FICEN, FICEL,   &
          PFMOVE, STEXU, STEYU, STEDU, IICEHMIN,     &
          IICEHINIT, ICESCALES(4), IICEHFAC, IICEHDISP, &
-         IICEDDISP, IICEFDISP, BTBETA, AAIRCMIN, AAIRGB
+         IICEDDISP, IICEFDISP, BTBETA, AAIRCMIN, AAIRGB, FETCH
 
     REAL(8)          :: GRIDSHIFT ! see notes in WMGHGH
 
@@ -724,6 +739,8 @@ MODULE W3GDATMD
     INTEGER, POINTER      :: IC4PARS(:)
     REAL, POINTER         :: IC4_KI(:)
     REAL, POINTER         :: IC4_FC(:)
+    REAL, POINTER         :: IC4_CN(:)
+    REAL                  :: IC4_FMIN, IC4_KIBK
 #endif
 #ifdef W3_IC5
     REAL,    POINTER      :: IC5PARS(:)
@@ -892,11 +909,12 @@ MODULE W3GDATMD
     REAL,     POINTER     :: DCKI(:,:), SATWEIGHTS(:,:),CUMULW(:,:),QBI(:,:)
     REAL                  :: AALPHA, BBETA, ZZ0MAX, ZZ0RAT, ZZALP,&
          SSINTHP, TTAUWSHELTER, SSWELLF(1:7), &
-         SSDSC(1:21), SSDSBR,                 &
+         SSDSC(1:21), SSDSBR, SINTAILPAR(1:5),&
          SSDSP, WWNMEANP, SSTXFTF, SSTXFTWN,  &
          FFXPM, FFXFM, FFXFA,   &
          SSDSBRF1, SSDSBRF2, SSDSBINT,SSDSBCK,&
-         SSDSHCK, SSDSABK, SSDSPBK, SSINBR
+         SSDSHCK, SSDSABK, SSDSPBK, SSINBR,   &
+         CAPCHNK(1:10)
     REAL                  :: ZZWND
     REAL                  :: SSDSCOS, SSDSDTH, SSDSBT, SSDSBM(0:4)
 #endif
@@ -916,6 +934,8 @@ MODULE W3GDATMD
 #ifdef W3_NL1
     REAL                  :: SNLC1, LAM, KDCON, KDMN,             &
          SNLS1, SNLS2, SNLS3
+    INTEGER               :: IQTPE, GQNF1, GQNT1, GQNQ_OM2
+    REAL                  :: NLTAIL, GQTHRSAT, GQTHRCOU, GQAMP(4)
 #endif
 #ifdef W3_NL2
     INTEGER               :: IQTPE, NDPTHS
@@ -1039,6 +1059,7 @@ MODULE W3GDATMD
     LOGICAL :: B_JGS_LIMITER
     LOGICAL :: B_JGS_USE_JACOBI
     LOGICAL :: B_JGS_BLOCK_GAUSS_SEIDEL
+    INTEGER :: B_JGS_TRUNK_DIGITS
     INTEGER :: B_JGS_MAXITER
     INTEGER :: B_JGS_LIMITER_FUNC
     REAL*8  :: B_JGS_PMIN
@@ -1142,6 +1163,8 @@ MODULE W3GDATMD
   INTEGER, POINTER        :: IC4PARS(:)
   REAL, POINTER           :: IC4_KI(:)
   REAL, POINTER           :: IC4_FC(:)
+  REAL, POINTER           :: IC4_CN(:)
+  REAL, POINTER           :: IC4_FMIN, IC4_KIBK
 #endif
 #ifdef W3_IC5
   REAL,    POINTER        :: IC5PARS(:)
@@ -1174,7 +1197,7 @@ MODULE W3GDATMD
        FICEL, PFMOVE, STEXU, STEYU, STEDU,   &
        IICEHMIN, IICEHINIT, ICESCALES(:),    &
        IICEHFAC, IICEHDISP, IICEDDISP, IICEFDISP, &
-       BTBETA, AAIRCMIN, AAIRGB
+       BTBETA, AAIRCMIN, AAIRGB, FETCH
   REAL(8),POINTER         :: GRIDSHIFT ! see notes in WMGHGH
 #ifdef W3_RTD
   REAL, POINTER         :: PoLat, PoLon
@@ -1316,9 +1339,10 @@ MODULE W3GDATMD
        FFXFM, FFXPM, SSDSBRF1, SSDSBRF2,    &
        SSDSBINT, SSDSBCK, SSDSHCK, SSDSABK, &
        SSDSPBK, SSINBR,SSINTHP,TTAUWSHELTER,&
-       SSWELLF(:), SSDSC(:), SSDSBR,        &
+       SINTAILPAR(:), SSWELLF(:), SSDSC(:), SSDSBR,        &
        SSDSP, WWNMEANP, SSTXFTF, SSTXFTWN,  &
-       SSDSBT, SSDSCOS, SSDSDTH, SSDSBM(:)
+       SSDSBT, SSDSCOS, SSDSDTH, SSDSBM(:), &
+       CAPCHNK(:) 
 #endif
 #ifdef W3_ST6
   REAL, POINTER           :: SIN6A0, SDS6A1, SDS6A2, SWL6B1, &
@@ -1331,6 +1355,8 @@ MODULE W3GDATMD
   !/ Data aliasses for structure SNLP(S)
   !/
 #ifdef W3_NL1
+  INTEGER, POINTER        :: IQTPE, GQNF1, GQNT1, GQNQ_OM2
+  REAL, POINTER           :: NLTAIL, GQTHRSAT, GQTHRCOU, GQAMP(:)
   REAL, POINTER           :: SNLC1, LAM, KDCON, KDMN,             &
        SNLS1, SNLS2, SNLS3
 #endif
@@ -1402,6 +1428,7 @@ MODULE W3GDATMD
   LOGICAL, POINTER :: B_JGS_BLOCK_GAUSS_SEIDEL
   INTEGER, POINTER :: B_JGS_MAXITER
   INTEGER, POINTER :: B_JGS_LIMITER_FUNC
+  INTEGER, POINTER :: B_JGS_TRUNK_DIGITS
   REAL(8), POINTER :: B_JGS_PMIN
   REAL(8), POINTER :: B_JGS_DIFF_THR
   REAL(8), POINTER :: B_JGS_NORM_THR
@@ -1837,6 +1864,8 @@ CONTAINS
     CHECK_ALLOC_STATUS ( ISTAT )
     ALLOCATE ( GRIDS(IMOD)%IC4_FC(NIC4), STAT=ISTAT )
     CHECK_ALLOC_STATUS ( ISTAT )
+    ALLOCATE ( GRIDS(IMOD)%IC4_CN(NIC42), STAT=ISTAT )
+    CHECK_ALLOC_STATUS ( ISTAT )
 #endif
 #ifdef W3_IC5
     ALLOCATE ( GRIDS(IMOD)%IC5PARS(9), STAT=ISTAT )
@@ -2071,12 +2100,18 @@ CONTAINS
          MPARS(IMOD)%SRCPS%QBI(NKHS,NKD),   &
          STAT=ISTAT                         )
     CHECK_ALLOC_STATUS ( ISTAT )
+    MPARS(IMOD)%SRCPS%IKTAB(:,:)=0.
+    MPARS(IMOD)%SRCPS%DCKI(:,:)=0.
+    MPARS(IMOD)%SRCPS%QBI(:,:)=0.
     SDSNTH  = MTH/2-1 !MIN(NINT(SSDSDTH/(DTH*RADE)),MTH/2-1)
     ALLOCATE( MPARS(IMOD)%SRCPS%SATINDICES(2*SDSNTH+1,MTH), &
          MPARS(IMOD)%SRCPS%SATWEIGHTS(2*SDSNTH+1,MTH), &
          MPARS(IMOD)%SRCPS%CUMULW(MSPEC,MSPEC),        &
          STAT=ISTAT                                   )
     CHECK_ALLOC_STATUS ( ISTAT )
+    MPARS(IMOD)%SRCPS%SATINDICES(:,:)=1.
+    MPARS(IMOD)%SRCPS%SATWEIGHTS(:,:)=0.
+    MPARS(IMOD)%SRCPS%CUMULW(:,:)=0.
 #endif
     !
     SGRDS(IMOD)%SINIT  = .TRUE.
@@ -2310,6 +2345,9 @@ CONTAINS
     IC4PARS => GRIDS(IMOD)%IC4PARS
     IC4_KI => GRIDS(IMOD)%IC4_KI
     IC4_FC => GRIDS(IMOD)%IC4_FC
+    IC4_CN => GRIDS(IMOD)%IC4_CN
+    IC4_FMIN => GRIDS(IMOD)%IC4_FMIN
+    IC4_KIBK => GRIDS(IMOD)%IC4_KIBK
 #endif
 #ifdef W3_IC5
     IC5PARS => GRIDS(IMOD)%IC5PARS
@@ -2354,6 +2392,7 @@ CONTAINS
     STEDU  => GRIDS(IMOD)%STEDU
     BTBETA => GRIDS(IMOD)%BTBETA
     AAIRGB => GRIDS(IMOD)%AAIRGB
+    FETCH  => GRIDS(IMOD)%FETCH
     AAIRCMIN => GRIDS(IMOD)%AAIRCMIN
     !
     GINIT  => GRIDS(IMOD)%GINIT
@@ -2651,6 +2690,8 @@ CONTAINS
     ZZ0RAT   => MPARS(IMOD)%SRCPS%ZZ0RAT
     ZZALP    => MPARS(IMOD)%SRCPS%ZZALP
     TTAUWSHELTER  => MPARS(IMOD)%SRCPS%TTAUWSHELTER
+    SINTAILPAR  => MPARS(IMOD)%SRCPS%SINTAILPAR
+    CAPCHNK  => MPARS(IMOD)%SRCPS%CAPCHNK
     SSWELLFPAR  => MPARS(IMOD)%SRCPS%SSWELLFPAR
     SSWELLF  => MPARS(IMOD)%SRCPS%SSWELLF
     SSDSC    => MPARS(IMOD)%SRCPS%SSDSC
@@ -2708,6 +2749,14 @@ CONTAINS
     SNLS1  => MPARS(IMOD)%SNLPS%SNLS1
     SNLS2  => MPARS(IMOD)%SNLPS%SNLS2
     SNLS3  => MPARS(IMOD)%SNLPS%SNLS3
+    IQTPE  => MPARS(IMOD)%SNLPS%IQTPE
+    GQNF1  => MPARS(IMOD)%SNLPS%GQNF1
+    GQNT1  => MPARS(IMOD)%SNLPS%GQNT1
+    GQNQ_OM2  => MPARS(IMOD)%SNLPS%GQNQ_OM2
+    NLTAIL => MPARS(IMOD)%SNLPS%NLTAIL
+    GQTHRSAT => MPARS(IMOD)%SNLPS%GQTHRSAT
+    GQTHRCOU=> MPARS(IMOD)%SNLPS%GQTHRCOU
+    GQAMP=> MPARS(IMOD)%SNLPS%GQAMP
 #endif
 #ifdef W3_NL2
     IQTPE  => MPARS(IMOD)%SNLPS%IQTPE
@@ -2831,6 +2880,7 @@ CONTAINS
     B_JGS_NORM_THR => MPARS(IMOD)%SCHMS%B_JGS_NORM_THR
     B_JGS_NLEVEL => MPARS(IMOD)%SCHMS%B_JGS_NLEVEL
     B_JGS_SOURCE_NONLINEAR => MPARS(IMOD)%SCHMS%B_JGS_SOURCE_NONLINEAR
+    B_JGS_TRUNK_DIGITS => MPARS(IMOD)%SCHMS%B_JGS_TRUNK_DIGITS
     RETURN
     !
     ! Formats
@@ -2934,7 +2984,10 @@ CONTAINS
     LOGICAL, PARAMETER :: SPHERE = .FALSE.
     INTEGER :: PRANGE(2), QRANGE(2)
     INTEGER :: LBI(2), UBI(2), LBO(2), UBO(2), ISTAT
+#if defined(TEST_W3GDATMD) || defined(TEST_W3GDATMD_W3GNTX)
     REAL   , ALLOCATABLE :: COSA(:,:)
+#endif
+
 #ifdef W3_S
     INTEGER, SAVE      :: IENT = 0
     CALL STRACE (IENT, 'W3GNTX')
@@ -3153,7 +3206,6 @@ CONTAINS
     !/ Parameter list
     !/
     INTEGER, INTENT(IN)     :: IMOD, MTRI, MX, COUNTOTA, NNZ, NDSE, NDST
-    INTEGER                 :: IAPROC = 1
     !/
     !/ ------------------------------------------------------------------- /
     !/ Local parameters
@@ -3325,15 +3377,19 @@ CONTAINS
     !/
     !/ ------------------------------------------------------------------- /
     !/
-    INTEGER                 :: ISEA, IX, IY, IXY, IXN, IXP, IYN, IYP
-    INTEGER                 :: J, K, NEIGH1(0:7)
-    INTEGER                 :: ILEV, NLEV
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
 #endif
+#ifdef W3_REF1
+    REAL                    :: COSAVG, SINAVG, THAVG, CLAT
+    INTEGER                 :: J, K
+#endif
+#if defined(W3_REF1) || defined(W3_REFT)
+    INTEGER                 :: IX, IY
+    INTEGER                 :: NEIGH1(0:7)
+    REAL                    :: ANGLES(0:7)
+#endif
 
-    REAL                    :: TRIX(NY*NX), TRIY(NY*NX), DX, DY,    &
-         COSAVG, SINAVG, THAVG, ANGLES(0:7), CLAT
     !/
     !/ ------------------------------------------------------------------- /
     !/

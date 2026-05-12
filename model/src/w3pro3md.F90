@@ -1,5 +1,25 @@
+!> @file
+!> @brief Bundles routines for third order propagation scheme in single
+!>  module.
+!>
+!> @author H. L. Tolman
+!> @date   27-May-2014
+!>
+
 #include "w3macros.h"
 !/ ------------------------------------------------------------------- /
+!>
+!> @brief Bundles routines for third order propagation scheme in single
+!>  module.
+!>
+!> @author H. L. Tolman
+!> @date   27-May-2014
+!>
+!> @copyright Copyright 2009-2022 National Weather Service (NWS),
+!>       National Oceanic and Atmospheric Administration.  All rights
+!>       reserved.  WAVEWATCH III is a trademark of the NWS.
+!>       No unauthorized use without permission.
+!>
 MODULE W3PRO3MD
   !/
   !/                  +-----------------------------------+
@@ -110,6 +130,12 @@ MODULE W3PRO3MD
   !/
 CONTAINS
   !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Generate 'map' arrays for the ULTIMATE QUICKEST scheme.
+  !>
+  !> @author H. L. Tolman
+  !> @date   01-Apr-2008
+  !>
   SUBROUTINE W3MAP3
     !/
     !/                  +-----------------------------------+
@@ -189,12 +215,15 @@ CONTAINS
     !
     ! 10. Source code :
     !/ ------------------------------------------------------------------- /
-    USE W3GDATMD, ONLY: NK, NTH, NSPEC, NX, NY, NSEA, MAPSTA, MAPSF,&
-         GTYPE
+    USE W3GDATMD, ONLY: NK, NTH, NX, NY, NSEA, MAPSTA, MAPSF, GTYPE
     USE W3ADATMD, ONLY: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2, NACT,   &
          NCENT, MAPX2, MAPY2, MAPAXY, MAPCXY,        &
          MAPTH2, MAPWN2
+#ifdef W3_T
+    USE W3GDATMD, ONLY: NSPEC
     USE W3ODATMD, ONLY: NDST
+#endif
+    !/
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
 #endif
@@ -488,6 +517,13 @@ CONTAINS
     !/
   END SUBROUTINE W3MAP3
   !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Generate 'map' arrays for the ULTIMATE QUICKEST scheme to combine
+  !>  GSE alleviation with obstructions.
+  !>
+  !> @author H. L. Tolman
+  !> @date   17-Dec-2004
+  !>
   SUBROUTINE W3MAPT
     !/
     !/                  +-----------------------------------+
@@ -538,7 +574,7 @@ CONTAINS
     !
     ! 10. Source code :
     !/ ------------------------------------------------------------------- /
-    USE W3GDATMD, ONLY: NX, NY, NSEA, MAPSF
+    USE W3GDATMD, ONLY: NSEA, MAPSF
     USE W3ADATMD, ONLY: ATRNX, ATRNY, MAPTRN
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
@@ -588,6 +624,20 @@ CONTAINS
     !/
   END SUBROUTINE W3MAPT
   !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Propagation in phyiscal space for a given spectral component.
+  !>
+  !> @param[in]    ISP     Number of spectral bin (IK-1)*NTH+ITH.
+  !> @param[in]    DTG     Total time step.
+  !> @param[in]    MAPSTA  Grid point status map.
+  !> @param[in]    MAPFS   Storage map.
+  !> @param[inout] VQ      Field to propagate.
+  !> @param[in]    VGX     Speed of grid.
+  !> @param[in]    VGY     Speed of grid.
+  !>
+  !> @author H. L. Tolman
+  !> @date   27-May-2014
+  !>
   SUBROUTINE W3XYP3 ( ISP, DTG, MAPSTA, MAPFS, VQ, VGX, VGY )
     !/
     !/                  +-----------------------------------+
@@ -741,14 +791,14 @@ CONTAINS
     USE W3TIMEMD, ONLY: DSEC21
     !
     USE W3GDATMD, ONLY: NX, NY, NSEA, MAPSF, DTCFL, CLATS,      &
-         ICLOSE, FLCX, FLCY, NK, NTH, DTH, XFR,  &
+         ICLOSE, FLCX, FLCY, NTH, DTH, XFR,      &
          ICLOSE_NONE, ICLOSE_SMPL, ICLOSE_TRPL,  &
-         ECOS, ESIN, SIG, WDCG, WDTH, PFMOVE,    &
+         ECOS, ESIN, SIG, WDCG, WDTH,            &
          FLAGLL, DPDX, DPDY, DQDX, DQDY, GSQRT
     USE W3WDATMD, ONLY: TIME
     USE W3ADATMD, ONLY: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2, NACT,   &
-         NCENT, MAPX2, MAPY2, MAPAXY, MAPCXY,        &
-         MAPTRN, CG, CX, CY, ATRNX, ATRNY, ITIME
+         NCENT, MAPX2, MAPY2, MAPAXY, MAPCXY,                       &
+         MAPTRN, CG, CX, CY, ATRNX, ATRNY
     USE W3IDATMD, ONLY: FLCUR
     USE W3ODATMD, ONLY: NDSE, NDST, FLBPI, NBI, TBPI0, TBPIN,       &
          ISBPI, BBPI0, BBPIN, IAPROC, NAPERR
@@ -761,6 +811,9 @@ CONTAINS
 #endif
 #ifdef W3_UNO
     USE W3UNO2MD
+#endif
+#ifdef W3_MGG
+    USE W3GDATMD, ONLY: PFMOVE
 #endif
     !/
     IMPLICIT NONE
@@ -1352,8 +1405,12 @@ CONTAINS
         END IF
         DO IBI=1, NBI
           IXY     = MAPSF(ISBPI(IBI),3)
+#ifdef W3_PDLIB
+          VQ(IXY) = ( RD1*BBPI0(ISP,IBI) + RD2*BBPIN(ISP,IBI) ) * CLATS(ISBPI(IBI))
+#else
           VQ(IXY) = ( RD1*BBPI0(ISP,IBI) + RD2*BBPIN(ISP,IBI) )   &
                / CG(IK,ISBPI(IBI)) * CLATS(ISBPI(IBI))
+#endif
         END DO
       END IF
       !
@@ -1419,6 +1476,46 @@ CONTAINS
     !/
   END SUBROUTINE W3XYP3
   !/ ------------------------------------------------------------------- /
+!>
+!> @brief Propagation in spectral space.
+!>
+!> @details Third order QUICKEST scheme with ULTIMATE limiter.
+!>
+!> As with the spatial propagation, the two spaces are considered
+!> independently, but the propagation is performed in a 2-D space.
+!> Compared to the propagation in physical space, the directions
+!> represent a closed space and are therefore comparable to the
+!> longitudinal or 'X' propagation. The wavenumber space has to be
+!> extended to allow for boundary treatment. Using a simple first
+!> order boundary treatment at both sided, two points need to
+!> be added. This implies that the spectrum needs to be extended,
+!> shifted and rotated, as is performed using MAPTH2 as set
+!> in W3MAP3.
+!>
+!> @param[in]    ISEA      Number of sea point.
+!> @param[in]    FACTH     Factor in propagation velocity.
+!> @param[in]    FACK      Factor in propagation velocity.
+!> @param[in]    CTHG0     Factor in great circle refracftion term.
+!> @param[in]    CG        Local group velocities.
+!> @param[in]    WN        Local wavenumbers.
+!> @param[in]    DW        Depth.
+!> @param[in]    DDDX      Depth gradients.
+!> @param[in]    DDDY      Depth gradients.
+!> @param[in]    CX        Current components.
+!> @param[in]    CY        Current components.
+!> @param[in]    DCXDX     Current gradients.
+!> @param[in]    DCXDY     Current gradients.
+!> @param[in]    DCYDX     Current gradients.
+!> @param[in]    DCYDY     Current gradients.
+!> @param[in]    DCDX      Phase speed gradients.
+!> @param[in]    DCDY      Phase speed gradients.
+!> @param[inout] VA        Spectrum.
+!> @param[out]   CFLTHMAX
+!> @param[out]   CFLKMAX
+!>
+!> @author H. L. Tolman
+!> @date   01-Jul-2013
+!>
   SUBROUTINE W3KTP3 ( ISEA, FACTH, FACK, CTHG0, CG, WN, DW,       &
        DDDX, DDDY, CX, CY, DCXDX, DCXDY,           &
        DCYDX, DCYDY, DCDX, DCDY, VA, CFLTHMAX, CFLKMAX )
@@ -1538,7 +1635,7 @@ CONTAINS
     USE W3GDATMD, ONLY: NK, NK2, NTH, NSPEC, SIG, DSIP, ECOS, ESIN, &
          EC2, ESC, ES2, FACHFA, MAPWN, FLCTH, FLCK,  &
          CTMAX, DMIN
-    USE W3ADATMD, ONLY: MAPTH2, MAPWN2, ITIME
+    USE W3ADATMD, ONLY: MAPTH2, MAPWN2, ITSTEP
     USE W3IDATMD, ONLY: FLCUR
     USE W3ODATMD, ONLY: NDSE, NDST
 #ifdef W3_S
@@ -1761,7 +1858,7 @@ CONTAINS
     !
     ! 5.  Propagate ------------------------------------------------------ *
     !
-    IF ( MOD(ITIME,2) .EQ. 0 ) THEN
+    IF ( MOD(ITSTEP,2) .EQ. 0 ) THEN
       IF ( FLCK ) THEN
         DO ITH=1, NTH
           VQ(NK+2+(ITH-1)*NK2) = FACHFA * VQ(NK+1+(ITH-1)*NK2)
@@ -1863,6 +1960,23 @@ CONTAINS
     !/
   END SUBROUTINE W3KTP3
   !/ ------------------------------------------------------------------- /
+  !>
+  !> @brief Computes the maximum CFL number for spatial advection.
+  !>
+  !> @details Used for diagnostic purposes (Could be used to define a
+  !>  local time step ...).
+  !>
+  !> @param[in]    ISEA      Index of grid point.
+  !> @param[in]    DTG       Total time step.
+  !> @param[in]    MAPSTA    Grid point status map.
+  !> @param[in]    MAPFS     Storage map.
+  !> @param[inout] CFLXYMAX  Maximum CFL number for XY propagation.
+  !> @param[in]    VGX       Speed of grid.
+  !> @param[in]    VGY       Speed of grid.
+  !>
+  !> @author F. Ardhuin
+  !> @date   31-Oct-2010
+  !>
   SUBROUTINE W3CFLXY ( ISEA, DTG, MAPSTA, MAPFS, CFLXYMAX, VGX, VGY )
     !/
     !/                  +-----------------------------------+
@@ -1946,17 +2060,10 @@ CONTAINS
     !
     USE W3TIMEMD, ONLY: DSEC21
     !
-    USE W3GDATMD, ONLY: NX, NY, NSEA, MAPSF, DTCFL, CLATS,      &
-         FLCX, FLCY, NK, NTH, DTH, XFR,          &
-         ECOS, ESIN, SIG, WDCG, WDTH, PFMOVE,    &
-         FLAGLL, DPDX, DPDY, DQDX, DQDY, GSQRT
-    USE W3WDATMD, ONLY: TIME
-    USE W3ADATMD, ONLY: NMX0, NMX1, NMX2, NMY0, NMY1, NMY2, NACT,   &
-         NCENT, MAPX2, MAPY2, MAPAXY, MAPCXY,        &
-         MAPTRN, CG, CX, CY, ATRNX, ATRNY, ITIME
+    USE W3GDATMD, ONLY: NX, NY, MAPSF, CLATS,                 &
+         NK, NTH, ECOS, ESIN, DPDX, DPDY, DQDX, DQDY
+    USE W3ADATMD, ONLY: CG, CX, CY
     USE W3IDATMD, ONLY: FLCUR
-    USE W3ODATMD, ONLY: NDSE, NDST, FLBPI, NBI, TBPI0, TBPIN,       &
-         ISBPI, BBPI0, BBPIN
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
 #endif
@@ -1973,15 +2080,11 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     !/ Local parameters
     !/
-    INTEGER                 :: ITH, IK, IXY, IP
-    INTEGER                 :: IX, IY, IXC, IYC, IBI
+    INTEGER                 :: ITH, IK, IXY
+    INTEGER                 :: IX, IY
 #ifdef W3_S
     INTEGER, SAVE           :: IENT = 0
 #endif
-    REAL                    :: CG0, CGA, CGN, CGX, CGY, CXC, CYC,   &
-         CXMIN, CXMAX, CYMIN, CYMAX
-    REAL                    :: CGC, FGSE = 1.
-    REAL                    :: FTH, FTHX, FTHY, FCG, FCGX, FCGY
     REAL                    :: CP, CQ
     !/
     !/ Automatic work arrays
