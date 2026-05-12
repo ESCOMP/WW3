@@ -415,7 +415,7 @@ CONTAINS
                           FLCTH, FSREFRACTION, FLCK, FSFREQSHIFT, FLAGLL,  &
                           FLDRY, FSTOTALIMP, FLCX, FLCY, FLSOU, FLAGST,    &
                           SIG, CLATS, TRNX, TRNY, DTMAX, DTCFLI, DTH,      &
-                          DMIN, W3SETG
+                          DMIN, FILEXT, W3SETG
     !/
     USE W3WDATMD,  ONLY : UST, IWDATA, TIME, TLEV, TICE, TIC1, VA, ASF,    &
                           RHOAIR, USTDIR, ICE, ICEH, ICEF, ICEDMAX, BERG,  &
