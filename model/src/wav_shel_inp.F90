@@ -107,8 +107,9 @@ contains
   subroutine read_shel_config(mpi_comm, mds, time0_overwrite, timen_overwrite)
 
     use wav_shr_flags
+    use mpi_f08        , only : MPI_COMM
     use w3nmlshelmd    , only : nml_domain_t, nml_input_t, nml_output_type_t
-    use w3nmlshelmd    , only : nml_output_date_t, nml_homog_count_t, nml_homog_input_t
+    use w3nmlshelmd    , only : nml_output_date_t, nml_output_path_t, nml_homog_count_t, nml_homog_input_t
     use w3nmlshelmd    , only : w3nmlshel
     use w3gdatmd       , only : flagll, dtmax, nx, ny, gtype
     use w3wdatmd       , only : time, w3ndat, w3dimw, w3setw
@@ -138,10 +139,12 @@ contains
     ! local parameters
     integer, parameter  :: nhmax =    200
 
+    type(MPI_COMM)            :: mpicomm_f08
     type(nml_domain_t)       :: nml_domain
     type(nml_input_t)        :: nml_input
     type(nml_output_type_t)  :: nml_output_type
     type(nml_output_date_t)  :: nml_output_date
+    type(nml_output_path_t)  :: nml_output_path
     type(nml_homog_count_t)  :: nml_homog_count
     type(nml_homog_input_t), allocatable  :: nml_homog_input(:)
 
@@ -269,8 +272,9 @@ contains
       ! Read namelist
       !--------------------
 
-      call w3nmlshel (mpi_comm, ndsi, trim(filename), nml_domain, nml_input, &
-           nml_output_type, nml_output_date, nml_homog_count, nml_homog_input, ierr)
+      mpicomm_f08%MPI_VAL = mpi_comm
+      call w3nmlshel (mpicomm_f08, ndsi, trim(filename), nml_domain, nml_input, &
+           nml_output_type, nml_output_date, nml_output_path, nml_homog_count, nml_homog_input, ierr)
 
       !--------------------
       ! 2.1 forcing flags
