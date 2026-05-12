@@ -645,6 +645,7 @@ CONTAINS
         !
       END IF
     ELSE
+800   CONTINUE
 #ifdef W3_LN0
       TYPE   = 'WIND'
       RSTYPE = 1
