@@ -6694,7 +6694,7 @@ CONTAINS
 !
 4960 FORMAT (/'  Langmuir Mixing Parameterization ',A/                   &
               ' --------------------------------------------------')
-4961 FORMAT ('  &LMPN LMPENABLED = ',L, 'SDTAIL = ', L, ' HSLMODE = ', I2 '/' )
+4961 FORMAT ('  &LMPN LMPENABLED = ',L, 'SDTAIL = ', L, ' HSLMODE = ', I2, '/' )
 !
 4970 FORMAT (/'  Spectral output on full grid ',A/                   &
          ' --------------------------------------------------')
