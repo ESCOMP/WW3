@@ -2098,7 +2098,7 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     USE CONSTANTS,ONLY: GRAV, DWAT, PI, TPI, RADE, DEBUG_NODE
     USE W3GDATMD, ONLY: NSPEC, NTH, NK, SSDSBR, SSDSBT, DDEN,      &
-         SSDSC, SIG, SSDSP, ECOS, ESIN, DTH, AAIRGB,       &
+         SSDSC, SIG, SSDSP, ECOS, ESIN, EC2, ES2, ESC, DTH, AAIRGB, &
          SSDSDTH, SSDSBM, AAIRCMIN, IKTAB, DCKI,           &
          SATINDICES, SATWEIGHTS, CUMULW, NKHS, NKD, &
          NDTAB, QBI, DSIP, SSDSBRF1,XFR
