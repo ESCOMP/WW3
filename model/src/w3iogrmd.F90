@@ -1560,7 +1560,7 @@ CONTAINS
            SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA,           &
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
-           DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK
+           DIKCUMUL, CUMULW, SINTAILPAR
 #ifdef W3_ASCII
       WRITE (NDSA,*)                                         &
            'ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,    &
@@ -1573,7 +1573,7 @@ CONTAINS
            SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA,           &
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
-           DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK:',          &
+           DIKCUMUL, CUMULW, SINTAILPAR:',                   &
            ZZWND, AALPHA, ZZ0MAX, BBETA, SSINTHP, ZZALP,     &
            TTAUWSHELTER, SSWELLFPAR, SSWELLF, SSINBR,        &
            ZZ0RAT, SSDSC,                                    &
@@ -1584,7 +1584,7 @@ CONTAINS
            SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA,           &
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
-           DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK
+           DIKCUMUL, CUMULW, SINTAILPAR
 #endif
       IF (SINTAILPAR(1).GT.0.5) THEN
         WRITE (NDSM) DELUST, DELTAIL, DELTAUW, DELU, DELALP, &
@@ -1610,8 +1610,7 @@ CONTAINS
            SSDSPBK, SSDSBINT, FFXPM, FFXFM, FFXFA,           &
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
-           DIKCUMUL, CUMULW, SINTAILPAR, CAPCHNK
-      IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3IOGR','mod_def.'//FILEXT(:IEXT),51)
+           DIKCUMUL, CUMULW, SINTAILPAR
       IF (SINTAILPAR(1).GT.0.5) THEN
         CALL INSIN4(.FALSE.)
         READ (NDSM,IOSTAT=IERR)                       &
