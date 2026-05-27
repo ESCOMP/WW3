@@ -130,5 +130,7 @@ message("PROJECT_BINARY_DIR is ${PROJECT_BINARY_DIR}")
 # Executables to always build
 add_executable(ww3_grid ww3_grid.F90)
 target_link_libraries(ww3_grid PRIVATE wav)
+add_executable(ww3_strt ww3_strt.F90)
+target_link_libraries(ww3_strt PRIVATE wav)
 
 install(TARGETS wav)

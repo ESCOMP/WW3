@@ -1,4 +1,4 @@
-!> @file
+
 !> @brief Source term integration routine.
 !>
 !> @author H. L. Tolman
@@ -265,6 +265,7 @@ CONTAINS
     !/    22-Mar-2021 : Add extra fields used in coupling   ( version 7.13 )
     !/    07-Jun-2021 : S_{nl5} GKE NL5 (Q. Liu)            ( version 7.13 )
     !/    19-Jul-2021 : Momentum and air density support    ( version 7.14 )
+    !/    04-Jul-2025 : Remove labelled statements          ( version X.XX )
     !/
     !/    Copyright 2009-2013 National Weather Service (NWS),
     !/       National Oceanic and Atmospheric Administration.  All rights
@@ -496,13 +497,22 @@ CONTAINS
     USE CONSTANTS, ONLY: DWAT, srce_imp_post, srce_imp_pre,         &
          srce_direct, GRAV, TPI, TPIINV
     USE W3GDATMD, ONLY: NK, NTH, NSPEC, SIG, TH, DMIN, DTMAX,       &
-         DTMIN, FACTI1, FACTI2, FACSD, FACHFA, FACP, &
-         XFC, XFLT, XREL, XFT, FXFM, FXPM, DDEN,     &
-         FTE, FTF, FHMAX, ECOS, ESIN, IICEDISP,      &
+         DTMIN, FACTI1, FACTI2, FACSD, FACHFA, FACP,                &
+         XFLT, XREL, DDEN, FHMAX, ECOS, ESIN, IICEDISP,             &
          ICESCALES, IICESMOOTH
     USE W3GDATMD, ONLY: IC_NUMERICS
+#if defined(W3_ST1) || defined(W3_ST6)
+    USE W3GDATMD, ONLY: FXFM, FXPM
+#endif
+#if defined(W3_NL5) || defined(W3_NNT)
     USE W3WDATMD, ONLY: TIME
-    USE W3ODATMD, ONLY: NDSE, NDST, IAPROC
+#endif
+#if defined(W3_T) || defined(W3_ST1) || defined(W3_ST2) || defined(W3_ST3) || defined(W3_ST6)
+    USE W3ODATMD, ONLY: NDST
+#endif
+#if defined(W3_NNT) || defined(W3_PDLIB) || defined(W3_DEBUGSRC)
+    USE W3ODATMD, ONLY: IAPROC
+#endif
     USE W3IDATMD, ONLY: INFLAGS2
     USE W3DISPMD
 #ifdef W3_T
@@ -512,7 +522,7 @@ CONTAINS
     USE W3GDATMD, ONLY: IOBP, IOBPD, GTYPE, UNGTYPE, REFPARS
 #endif
 #ifdef W3_NNT
-    USE W3ODATMD, ONLY: IAPROC, SCREEN, FNMPRE
+    USE W3ODATMD, ONLY: SCREEN, FNMPRE
 #endif
 #ifdef W3_FLD1
     USE W3FLD1MD, ONLY: W3FLD1
@@ -548,7 +558,7 @@ CONTAINS
 #endif
 #ifdef W3_ST2
     USE W3SRC2MD
-    USE W3GDATMD, ONLY : ZWIND
+    USE W3GDATMD, ONLY : ZWIND, XFC, XFT
 #endif
 #ifdef W3_ST3
     USE W3SRC3MD
@@ -556,7 +566,7 @@ CONTAINS
 #endif
 #ifdef W3_ST4
     USE W3SRC4MD, ONLY : W3SPR4, W3SIN4, W3SDS4
-    USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM, FFXFA
+    USE W3GDATMD, ONLY : ZZWND, FFXFM, FFXPM, FFXFA, SINTAILPAR
 #endif
 #ifdef W3_ST6
     USE W3SRC6MD
@@ -565,6 +575,7 @@ CONTAINS
 #endif
 #ifdef W3_NL1
     USE W3SNL1MD
+    USE W3GDATMD, ONLY: IQTPE
 #endif
 #ifdef W3_NL2
     USE W3SNL2MD
@@ -635,7 +646,8 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
 #ifdef W3_NNT
-    USE W3SERVMD, ONLY: EXTCDE
+    USE W3SERVMD, ONLY: EXTOPN, EXTIOF
+    USE W3ODATMD, ONLY: NDSE
 #endif
 #ifdef W3_UOST
     USE W3UOSTMD, ONLY: UOST_SRCTRMCOMPUTE
@@ -682,39 +694,42 @@ CONTAINS
     !/ Local parameters
     !/
     INTEGER :: IK, ITH, IS, IS0, NSTEPS, NKH, NKH1, &
-         IKS1, IS1, NSPECH, IDT, IERR, ISP
+         IKS1, IS1, NSPECH, IDT
     REAL :: DTTOT, FHIGH, DT, AFILT, DAMAX, AFAC, &
-         HDT, ZWND, FP, DEPTH, TAUSCX, TAUSCY, FHIGI
+         HDT, ZWND, DEPTH, TAUSCX, TAUSCY, FHIGI
     ! Scaling factor for SIN, SDS, SNL
     REAL :: ICESCALELN, ICESCALEIN, ICESCALENL, ICESCALEDS
-    REAL :: EMEAN, FMEAN, AMAX, CD, Z0, SCAT,    &
-         SMOOTH_ICEDISP
+    REAL :: EMEAN, FMEAN, AMAX, CD, Z0
     REAL :: WN_R(NK), CG_ICE(NK), ALPHA_LIU(NK), ICECOEF2, R(NK)
-    DOUBLE PRECISION :: ATT, ISO
+    DOUBLE PRECISION :: ATT
     REAL :: EBAND, DIFF, EFINISH, HSTOT, PHINL,       &
          FMEAN1, FMEANWS, &
          FACTOR, FACTOR2, DRAT, TAUWAX, TAUWAY,    &
          MWXFINISH, MWYFINISH, A1BAND, B1BAND,     &
          COSI(2)
-    REAL :: SPECINIT(NSPEC), SPEC2(NSPEC), FRLOCAL, JAC2
-    REAL :: DAM (NSPEC), DAM2(NSPEC), WN2(NSPEC),  &
+    REAL :: SPECINIT(NSPEC), SPEC2(NSPEC)
+    REAL :: DAM (NSPEC), WN2(NSPEC),          &
          VSLN(NSPEC),                         &
          VSIN(NSPEC), VDIN(NSPEC),            &
          VSNL(NSPEC), VDNL(NSPEC),            &
          VSDS(NSPEC), VDDS(NSPEC),            &
          VSBT(NSPEC), VDBT(NSPEC)
-    REAL :: VS(NSPEC), VD(NSPEC), EB(NK)
+    REAL :: VS(NSPEC), VD(NSPEC)
 
     LOGICAL :: SHAVE
     LOGICAL :: LBREAK
     LOGICAL, SAVE :: FIRST = .TRUE.
-    LOGICAL :: PrintDeltaSmDA
-    REAL :: eInc1, eInc2, eVS, eVD, JAC
-    REAL :: DeltaSRC(NSPEC)
+    REAL :: eInc1, eInc2
 
-    REAL :: FOUT(NK,NTH), SOUT(NK,NTH), DOUT(NK,NTH)
     REAL, SAVE :: TAUNUX, TAUNUY
-    LOGICAL, SAVE :: FLTEST = .FALSE., FLAGNN = .TRUE.
+
+#if defined(W3_OMPG) || defined(W3_T) || defined(W3_ST1) || defined(W3_ST2) || defined(W3_ST3) || defined(W3_ST6)
+    LOGICAL, SAVE :: FLTEST = .FALSE.
+#endif
+
+#if defined(W3_OMPG) || defined(W3_NNT)
+    LOGICAL, SAVE :: FLAGNN = .TRUE.
+#endif
 
 #ifdef W3_OMPG
     !$omp threadprivate( TAUNUX, TAUNUY)
@@ -722,6 +737,13 @@ CONTAINS
     !$omp threadprivate( FIRST )
 #endif
 
+#if defined(W3_PDLIB) || defined(W3_REF1)
+    INTEGER :: ISP
+#endif
+
+#if defined(W3_ST0) || defined(W3_ST1) || defined(W3_ST2) || defined(W3_ST6) || defined(W3_FLX2) || defined(W3_FLX3)
+    REAL :: FP
+#endif
     !/
     !/ ------------------------------------------------------------------- /
     !/ Local parameters dependent on compile switch
@@ -733,6 +755,9 @@ CONTAINS
 #ifdef W3_NNT
     INTEGER, SAVE :: NDSD = 89, NDSD2 = 88, J
     REAL :: QCERR  = 0.     !/XNL2 and !/NNT
+    INTEGER :: IERR
+    REAL :: FOUT(NK,NTH), SOUT(NK,NTH), DOUT(NK,NTH)
+    LOGICAL, SAVE :: FLAGNN = .TRUE.
 #endif
 
 #ifdef W3_NL5
@@ -784,7 +809,9 @@ CONTAINS
 
 #ifdef W3_IS2
     REAL :: VDIR2(NSPEC)
+    REAL :: SCAT, SMOOTH_ICEDISP
     DOUBLE PRECISION :: SCATSPEC(NTH)
+    DOUBLE PRECISION :: ISO
 #endif
 
 #ifdef W3_UOST
@@ -804,7 +831,7 @@ CONTAINS
 #endif
 
 #ifdef W3_ST4
-    REAL :: FMEANS, FH1, FH2, FAGE, DLWMEAN
+    REAL :: FH1, FH2, FAGE, DLWMEAN
     REAL :: BRLAMBDA(NSPEC)
 #endif
 
@@ -818,6 +845,9 @@ CONTAINS
 
 #ifdef W3_PDLIB
     REAL :: PreVS, DVS, SIDT, FAKS, MAXDAC
+    LOGICAL :: PrintDeltaSmDA
+    REAL :: DeltaSRC(NSPEC), DAM2(NSPEC)
+    REAL :: FRLOCAL, JAC, JAC2, eVS, eVD
 #endif
 
 #ifdef W3_NNT
@@ -1034,10 +1064,14 @@ CONTAINS
     TWS = 1./FMEANWS
 #endif
 #ifdef W3_ST4
-    TAUWX=0.
-    TAUWY=0.
-    IF ( IT .eq. 0 ) THEN
+    IF (SINTAILPAR(4).GT.0.5) THEN ! this is designed to keep the bug as an option
+      TAUWX=0.
+      TAUWY=0.
+    END IF
+    IF ( IT .EQ. 0 ) THEN
       LLWS(:) = .TRUE.
+      TAUWX=0.
+      TAUWY=0.
       USTAR=0.
       USTDIR=0.
     ELSE
@@ -1061,7 +1095,7 @@ CONTAINS
 #endif
 
 #ifdef W3_ST4
-      CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
+      IF (SINTAILPAR(4).GT.0.5) CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,       &
            U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY,       &
            VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
     END IF
@@ -1157,11 +1191,15 @@ CONTAINS
       J      = LEN_TRIM(FNMPRE)
       WRITE (FNAME(11:13),'(I3.3)') IAPROC
       OPEN (NDSD,FILE=FNMPRE(:J)//FNAME,form='UNFORMATTED', convert=file_endian,   &
-           ERR=800,IOSTAT=IERR)
-      WRITE (NDSD,ERR=801,IOSTAT=IERR) NK, NTH
-      WRITE (NDSD,ERR=801,IOSTAT=IERR) SIG(1:NK) * TPIINV
+            IOSTAT=IERR)
+      IF (IERR.NE.0) CALL EXTOPN(NDSE,IERR,'W3SRCE','',1,NAMEF=FNAME)
+      WRITE (NDSD,IOSTAT=IERR) NK, NTH
+      IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
+      WRITE (NDSD,IOSTAT=IERR) SIG(1:NK) * TPIINV
+      IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
       OPEN (NDSD2,FILE=FNMPRE(:J)//'time.ww3',                &
-           FORM='FORMATTED',ERR=800,IOSTAT=IERR)
+            FORM='FORMATTED',IOSTAT=IERR)
+      IF (IERR.NE.0) CALL EXTOPN(NDSE,IERR,'W3SRCE','',1,NAMEF='time.ww3')
     END IF
 #endif
     !
@@ -1216,7 +1254,11 @@ CONTAINS
       ! 2.b Nonlinear interactions.
       !
 #ifdef W3_NL1
-      CALL W3SNL1 ( SPEC, CG1, WNMEAN*DEPTH, VSNL, VDNL )
+      IF (IQTPE.GT.0) THEN
+        CALL W3SNL1 ( SPEC, CG1, WNMEAN*DEPTH, VSNL, VDNL )
+      ELSE
+        CALL W3SNLGQM ( SPEC, CG1, WN1, DEPTH, VSNL, VDNL )
+      END IF
 #endif
 #ifdef W3_NL2
       CALL W3SNL2 ( SPEC, CG1, DEPTH, VSNL, VDNL )
@@ -1236,7 +1278,7 @@ CONTAINS
       IF (.NOT. FSSOURCE .or. LSLOC) THEN
 #endif
 #ifdef W3_TR1
-        CALL W3STR1 ( SPEC, SPECOLD, CG1, WN1, DEPTH, IX,        VSTR, VDTR )
+        CALL W3STR1 ( SPEC, CG1, WN1, DEPTH, IX, VSTR, VDTR )
 #endif
 #ifdef W3_PDLIB
       ENDIF
@@ -1351,8 +1393,9 @@ CONTAINS
       WRITE (SCREEN,8888) TIME, DTTOT, FLAGNN, QCERR
       WRITE (NDSD2,8888) TIME, DTTOT, FLAGNN, QCERR
 8888  FORMAT (1X,I8.8,1X,I6.6,F8.1,L2,F8.2)
-      WRITE (NDSD,ERR=801,IOSTAT=IERR) IX, IY, TIME, NSTEPS,        &
+      WRITE (NDSD,IOSTAT=IERR) IX, IY, TIME, NSTEPS,        &
            DTTOT, FLAGNN, DEPTH, U10ABS, U10DIR
+      IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
       !
       IF ( FLAGNN ) THEN
         DO IK=1, NK
@@ -1364,9 +1407,12 @@ CONTAINS
             DOUT(IK,ITH) = VDNL(IS)
           END DO
         END DO
-        WRITE (NDSD,ERR=801,IOSTAT=IERR) FOUT
-        WRITE (NDSD,ERR=801,IOSTAT=IERR) SOUT
-        WRITE (NDSD,ERR=801,IOSTAT=IERR) DOUT
+        WRITE (NDSD,IOSTAT=IERR) FOUT
+        IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
+        WRITE (NDSD,IOSTAT=IERR) SOUT
+        IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
+        WRITE (NDSD,IOSTAT=IERR) DOUT
+        IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3SRC','',2,ISWRITE=.TRUE.)
       END IF
 #endif
       !
@@ -1569,8 +1615,13 @@ CONTAINS
                   DVS  = SIGN(MIN(MAXDAC,ABS(DVS)),DVS)
                 ENDIF
                 PreVS  = DVS / FAKS
-                eVS    = PreVS / CG1(IK) * CLATSL
-                eVD    = MIN(0.,VD(ISP))
+                IF (IOBP_LOC(JSEA) .EQ. 3) THEN
+                  eVS = 0
+                  eVD = 0
+                ELSE
+                  eVS    = PreVS / CG1(IK) * CLATSL
+                  eVD    = MIN(0.,VD(ISP))
+                ENDIF
                 B_JAC(ISP,JSEA)                   = B_JAC(ISP,JSEA) + SIDT * (eVS - eVD*SPEC(ISP)*JAC)
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) - SIDT * eVD
 #ifdef W3_DB1
@@ -1583,9 +1634,9 @@ CONTAINS
                   evS = -evS
                   evD = 2*evD
                 ENDIF
-#endif
                 B_JAC(ISP,JSEA)                   = B_JAC(ISP,JSEA) + SIDT * eVS
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) - SIDT * eVD
+#endif
 
 #ifdef W3_TR1
                 eVS = VSTR(ISP) * JAC
@@ -1597,9 +1648,9 @@ CONTAINS
                   evS = -evS
                   evD = 2*evD
                 ENDIF
-#endif
                 B_JAC(ISP,JSEA)                   = B_JAC(ISP,JSEA) + SIDT * eVS
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(JSEA)) - SIDT * eVD
+#endif
               END DO
             END DO
 
@@ -1728,7 +1779,7 @@ CONTAINS
 #endif
 #ifdef W3_TR1
         DO IS=IS1, NSPECH
-          eInc1 = VDTR(IS) * DT / MAX ( 1. , (1.-HDT*VDTR(IS)))
+          eInc1 = VSTR(IS) * DT / MAX ( 1. , (1.-HDT*VDTR(IS)))
           SPEC(IS) = MAX ( 0. , SPEC(IS)+eInc1 )
         END DO
 #endif
@@ -1954,6 +2005,13 @@ CONTAINS
       CALL W3SIN4 ( SPEC, CG1, WN2, U10ABS, USTAR, DRAT, AS,      &
            U10DIR, Z0, CD, TAUWX, TAUWY, TAUWAX, TAUWAY, &
            VSIN, VDIN, LLWS, IX, IY, BRLAMBDA )
+      IF (SINTAILPAR(4).LT.0.5) CALL W3SPR4 (SPEC, CG1, WN1, EMEAN, FMEAN, FMEAN1, WNMEAN,&
+           AMAX, U10ABS, U10DIR,                          &
+#ifdef W3_FLX5
+           TAUA, TAUADIR, DAIR,                     &
+#endif
+           USTAR, USTDIR,                                 &
+           TAUWX, TAUWY, CD, Z0, CHARN, LLWS, FMEANWS, DLWMEAN)
 #endif
 
       !
@@ -1989,22 +2047,6 @@ CONTAINS
     !
     DTDYN  = DTDYN / REAL(MAX(1,NSTEPS))
     FCUT   = FHIGH * TPIINV
-    !
-    GOTO 888
-    !
-    ! Error escape locations
-    !
-#ifdef W3_NNT
-800 CONTINUE
-    WRITE (NDSE,8000) FNAME, IERR
-    CALL EXTCDE (1)
-    !
-801 CONTINUE
-    WRITE (NDSE,8001) IERR
-    CALL EXTCDE (2)
-#endif
-    !
-888 CONTINUE
     !
     ! 9.a  Computes PHIOC------------------------------------------ *
     !     The wave to ocean flux is the difference between initial energy
@@ -2310,13 +2352,6 @@ CONTAINS
     !
     ! Formats
     !
-#ifdef W3_NNT
-8000 FORMAT (/' *** ERROR W3SRCE : ERROR IN OPENING FILE ',A,' ***'/ &
-         '                    IOSTAT = ',I10/)
-8001 FORMAT (/' *** ERROR W3SRCE : ERROR IN WRITING TO FILE ***'/    &
-         '                    IOSTAT = ',I10/)
-#endif
-    !
 #ifdef W3_T
 9000 FORMAT (' TEST W3SRCE : COUNTERS   : NO LONGER AVAILABLE')
 9001 FORMAT (' TEST W3SRCE : DEPTH      :',F8.1/                     &
@@ -2569,7 +2604,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
-    USE W3GDATMD, only : NTH, NK, NSPEC
+    USE W3GDATMD, only : NSPEC
     IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
@@ -2585,7 +2620,7 @@ CONTAINS
     !/ ------------------------------------------------------------------- /
     !/
 
-    INTEGER             :: ISP, ITH, IK, IS
+    INTEGER             :: IS
     REAL, INTENT(IN)    :: SPEC(NSPEC)
     REAL, INTENT(INOUT) :: VS(NSPEC), VD(NSPEC)
 #ifdef W3_S
@@ -2658,7 +2693,7 @@ CONTAINS
 #endif
     !
 
-    USE W3GDATMD, only : NTH, NK, NSPEC
+    USE W3GDATMD, only : NSPEC
     IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
@@ -2673,7 +2708,7 @@ CONTAINS
     !/
     !/ ------------------------------------------------------------------- /
     !/
-    INTEGER             :: ISP, ITH, IK, IS
+    INTEGER             :: IS
     REAL, INTENT(IN)    :: SPEC(NSPEC)
     REAL, INTENT(INOUT) :: VS(NSPEC), VD(NSPEC)
 #ifdef W3_S
