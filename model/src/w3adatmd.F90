@@ -1059,7 +1059,6 @@ CONTAINS
          WADATS(IMOD)%WNMEAN(NSEALM),                               &
          STAT=ISTAT )
     CHECK_ALLOC_STATUS ( ISTAT )
-
     !
     WADATS(IMOD)%HS     = UNDEF
     WADATS(IMOD)%WLM    = UNDEF

@@ -526,6 +526,7 @@ CONTAINS
     IF (INFLAGS2(-2)) ICECOEF6 = MUDD(IX,IY) ! a.k.a. MDN
     IF (INFLAGS2(-1)) ICECOEF7 = MUDT(IX,IY) ! a.k.a. MTH
     IF (INFLAGS2(0 )) ICECOEF8 = MUDV(IX,IY) ! a.k.a. MVS
+
     IC4METHOD = IC4PARS(1)
     !
 #ifdef W3_T38
@@ -706,7 +707,7 @@ CONTAINS
       DO IK=1,NK
         WN_I(IK)  = Chf*(hice**mpow)*(FREQ(IK)**npow)
       END DO
-
+    
     CASE (10)
       ! Cubic fit to Meylan, Horvat & Bitz 2021
       ! ICECOEF1 is thickness
@@ -734,15 +735,15 @@ CONTAINS
                   (-0.00010791)*x1sqr*x2 + &
                   0.00031073*x1**3 + 1.5996e-06*x2**3 + 0.090994*x3**3
         KARG1(IK)=min(KARG1(IK),0.0)
-        ALPHA(IK) = 10.0**KARG1(IK)
+        ALPHA(IK) = 10.0**KARG1(IK)  
         perfour=x1sqr*x1sqr
         if ((x1.gt.5.0) .and. (x1.lt.20.0)) then
           ALPHA(IK) = ALPHA(IK) + amhb/x1sqr+bmhb/perfour
         else if (x1.gt.20.0) then
           ALPHA(IK) = amhb/x1sqr+bmhb/perfour
         endif
-        WN_I(IK) = ALPHA(IK) * 0.5
-      end do
+          WN_I(IK) = ALPHA(IK) * 0.5
+        end do
 
     CASE DEFAULT
       WN_I = ICECOEF1 !Default to IC1: Uniform in k

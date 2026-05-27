@@ -151,8 +151,6 @@ MODULE W3IOGOMD
 #ifdef W3_S
   USE W3SERVMD, ONLY : STRACE
 #endif
-  !module default
-  IMPLICIT NONE
   !/
   PUBLIC
   CHARACTER(LEN=1024)                   :: FLDOUT
@@ -239,6 +237,8 @@ CONTAINS
 #ifdef W3_S
     USE W3SERVMD, ONLY: STRACE
 #endif
+    !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -407,6 +407,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -659,6 +660,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -789,6 +791,7 @@ CONTAINS
     !
     !/ ------------------------------------------------------------------- /
     USE W3GDATMD, ONLY: US3DF, USSPF
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Local parameters
@@ -1321,6 +1324,7 @@ CONTAINS
 #endif
     !
     USE W3PARALL, ONLY : INIT_GET_ISEA
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -2609,6 +2613,7 @@ CONTAINS
     USE W3WDATMD, ONLY: ICEF, ICEH
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -4289,6 +4294,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -4535,6 +4541,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !
     !/ ------------------------------------------------------------------- /
     !/ Parameter list

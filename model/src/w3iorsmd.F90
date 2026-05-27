@@ -63,8 +63,6 @@ MODULE W3IORSMD
   !  7. Source code :
   !
   !/ ------------------------------------------------------------------- /
-  !module default
-  IMPLICIT NONE
   PUBLIC
   !/
   ! Add fields needed for OASIS coupling in restart
@@ -349,6 +347,8 @@ CONTAINS
     use w3timemd, only: set_user_timestring
     use w3odatmd, only: use_user_restname, user_restfname, ndso
     !
+    IMPLICIT NONE
+    !
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -551,7 +551,7 @@ CONTAINS
       IFILE  = IFILE + 1
       !
 #ifdef W3_T
-      WRITE (NDST,9001) trim(FNAME), LRECL
+      WRITE (NDST,9001) FNAME, LRECL
 #endif
       !
 

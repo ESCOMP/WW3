@@ -655,6 +655,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -1056,6 +1057,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -1255,6 +1257,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -1423,6 +1426,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !/
     !/ ------------------------------------------------------------------- /
     !/ Parameter list
@@ -1623,6 +1627,7 @@ CONTAINS
     USE W3SERVMD, ONLY: STRACE
 #endif
     !
+    IMPLICIT NONE
     !
     !/
     !/ ------------------------------------------------------------------- /

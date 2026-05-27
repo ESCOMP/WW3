@@ -1611,6 +1611,7 @@ CONTAINS
            SSDSHCK,                                          &
            IKTAB, DCKI, QBI, SATINDICES, SATWEIGHTS,         &
            DIKCUMUL, CUMULW, SINTAILPAR
+      IF (IERR.NE.0) CALL EXTIOF(NDSE,IERR,'W3IOGR','mod_def.'//FILEXT(:IEXT),51)
       IF (SINTAILPAR(1).GT.0.5) THEN
         CALL INSIN4(.FALSE.)
         READ (NDSM,IOSTAT=IERR)                       &
