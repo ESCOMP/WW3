@@ -132,5 +132,9 @@ add_executable(ww3_grid ww3_grid.F90)
 target_link_libraries(ww3_grid PRIVATE wav)
 add_executable(ww3_strt ww3_strt.F90)
 target_link_libraries(ww3_strt PRIVATE wav)
+# ww3_strt is a serial preprocessor (runs during buildnml before the model runs).
+# Strip the MPI/DIST switches inherited from libwav and use SHRD so it runs
+# without mpirun, exactly like ww3_grid.
+target_compile_options(ww3_strt PRIVATE -UW3_MPI -UW3_DIST -DW3_SHRD)
 
 install(TARGETS wav)
