@@ -513,6 +513,14 @@ CONTAINS
         end if
       end if
       if ( write ) then
+        ! In I/O-server mode (IOSFLG) only NAPRST opens the file; the other
+        ! ranks skip the OPEN and must still see IERR=0 so they take the normal
+        ! (TYPE unchanged) path and join the restart gather below. Without this
+        ! their uninitialized IERR can be nonzero, sending them to the
+        ! file-open-failed branch that resets TYPE to WIND/CALM and makes them
+        ! skip the gather, which deadlocks the NAPRST collector. (The FNMRST
+        ! open branch further down already initializes IERR=0 the same way.)
+        IERR = 0
         IF ( .NOT.IOSFLG .OR. IAPROC.EQ.NAPRST )        &
              open (ndsr,file=trim(fname), form='unformatted', convert=file_endian,       &
              ACCESS='STREAM',IOSTAT=IERR)
