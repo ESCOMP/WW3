@@ -1432,6 +1432,7 @@ contains
 
     ! Initialize ww3 for cesm (called from InitializeRealize)
 
+    use mpi_f08      , only : MPI_COMM_T => MPI_COMM
     use w3initmd     , only : w3init
     use w3gdatmd     , only : dtcfl, dtcfli, dtmax, dtmin
     use w3idatmd     , only : inflags1, inflags2
@@ -1451,6 +1452,7 @@ contains
     integer , intent(out) :: rc
 
     ! local variables
+    type(MPI_COMM_T)  :: mpicomm_f08
     integer           :: ierr
     integer           :: unitn  ! namelist unit number
     logical           :: isPresent, isSet
@@ -1596,8 +1598,9 @@ contains
     ! IsMulti does not appear to be used, setting to .false.
 
     call ESMF_LogWrite(trim(subname)//' call w3init', ESMF_LOGMSG_INFO)
+    mpicomm_f08%MPI_VAL = mpi_comm
     call w3init ( 1, .false., 'ww3', mds, ntrace, odat, flgrd, flgr2, flgd, flg2, &
-         npts, x, y, pnames, iprt, prtfrm, mpi_comm )
+         npts, x, y, pnames, iprt, prtfrm, mpicomm_f08 )
 
     ! NOTE: these need to be set again AFTER w3init is run - since these values will be overwritten
     ! by the read of mod_def.ww3
@@ -1627,6 +1630,7 @@ contains
 
     ! Initialize ww3 for ufs (called from InitializeRealize)
 
+    use mpi_f08      , only : MPI_COMM_T => MPI_COMM
     use w3odatmd     , only : fnmpre
     use w3gdatmd     , only : dtcfl, dtcfli, dtmax, dtmin
     use w3initmd     , only : w3init
@@ -1642,6 +1646,7 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
+    type(MPI_COMM_T)  :: mpicomm_f08
     character(len=CL) :: logmsg
     logical           :: isPresent, isSet
     character(len=CL) :: cvalue
@@ -1690,8 +1695,9 @@ contains
     call read_shel_config(mpi_comm, mds, time0_overwrite=time0, timen_overwrite=timen)
 
     call ESMF_LogWrite(trim(subname)//' call w3init', ESMF_LOGMSG_INFO)
+    mpicomm_f08%MPI_VAL = mpi_comm
     call w3init ( 1, .false., 'ww3', mds, ntrace, odat, flgrd, flgr2, flgd, flg2, &
-         npts, x, y, pnames, iprt, prtfrm, mpi_comm )
+         npts, x, y, pnames, iprt, prtfrm, mpicomm_f08 )
 
     write(logmsg,'(A,4f10.2)') trim(subname)//': mod_def timesteps file  ',dtmax,dtcfl,dtcfli,dtmin
     call ESMF_LogWrite(trim(logmsg), ESMF_LOGMSG_INFO)
