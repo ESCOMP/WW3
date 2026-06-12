@@ -620,9 +620,12 @@ contains
         user_histfname = trim(casename)//'.ww3.hi.'
       endif
 
-      ! netcdf (PIO) is used for CESM gridded history output; restarts
-      ! remain binary, with the initial file read via initfile (see waveinit_cesm)
+      ! netcdf (PIO) is used for CESM gridded history output and restarts.
+      ! Initial and branch runs still read the binary initial-condition file
+      ! provided via initfile (see waveinit_cesm); continue runs read the
+      ! netcdf restart written by wav_restart_mod.
       use_historync = .true.
+      use_restartnc = .true.
     else
       call NUOPC_CompAttributeGet(gcomp, name='use_restartnc', value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -680,16 +683,15 @@ contains
     ! Wave model initialization
     !--------------------------------------------------------------------
 
-    time = time0
+    ! In CESM, wave model initialization (w3init) is deferred to
+    ! InitializeRealize: w3init reads the netCDF restart, which requires PIO,
+    ! and CESM PIO is only set up by the driver after the advertise phase
+    ! (PostChildrenAdvertise). For UFS, model init stays here in the advertise
+    ! phase, matching emc.
 #ifndef W3_CESMCOUPLED
+    time = time0
     call waveinit_ufs(gcomp, stdout, ntrace, mpicomm, mds, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-#else
-    call ESMF_ClockGet( clock, timeStep=timeStep, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call waveinit_cesm(gcomp, ntrace, mpicomm, mds, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-#endif
     !call mpi_barrier ( mpicomm, ierr )
     if ( root_task ) then
       inquire(unit=stdout, name=logfile)
@@ -712,6 +714,7 @@ contains
     if (use_historync) then
       call wav_history_init(stdout)
     end if
+#endif
 
     call advertise_fields(importState, exportState, flds_scalar_name, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -751,11 +754,15 @@ contains
 
     use w3odatmd    , only : naproc
     use w3gdatmd    , only : mapsf
-    use w3gdatmd    , only : nx, ny, ungtype, gtype, nseal, nsea
+    use w3gdatmd    , only : nx, ny, ungtype, gtype, nseal, nsea, nk
     use w3wdatmd    , only : time
     use w3parall    , only : init_get_isea
     use wav_shr_mod , only : diagnose_mesh, write_meshdecomp, wav_loginit
     use wav_pio_mod , only : wav_pio_init
+#ifdef W3_CESMCOUPLED
+    use wav_shel_inp    , only : set_shel_io
+    use wav_history_mod , only : wav_history_init
+#endif
 #ifdef W3_PDLIB
     use yowNodepool , only : ng
 #endif
@@ -789,6 +796,12 @@ contains
     integer(i4), pointer         :: meshmask(:)
     integer                      :: iam
     integer                      :: localcomm
+#ifdef W3_CESMCOUPLED
+    type(MPI_COMM)               :: mpicomm
+    integer                      :: mds(15)
+    integer                      :: ntrace(2)
+    character(CL)                :: logfile
+#endif
     character(len=*), parameter  :: subname = '(wav_comp_nuopc:InitializeRealize)'
     ! -------------------------------------------------------------------
 
@@ -813,6 +826,38 @@ contains
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
       call wav_pio_init(gcomp, localcomm, stdout, naproc, rc)
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    !--------------------------------------------------------------------
+    ! Wave model initialization (deferred from InitializeAdvertise so that
+    ! PIO, set up by the driver after the advertise phase, is available to
+    ! read the netCDF restart in w3init)
+    !--------------------------------------------------------------------
+
+    time = time0
+    call set_shel_io(stdout, mds, ntrace)
+    call ESMF_VMGet(vm, mpiCommunicator=mpicomm%mpi_val, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call waveinit_cesm(gcomp, ntrace, mpicomm, mds, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    if ( root_task ) then
+      inquire(unit=stdout, name=logfile)
+      write(*,'(a)')'WW3 log written to '//trim(logfile)
+    end if
+
+    if (wav_coupling_to_cice) then
+      if (nwav_elev_spectrum .gt. nk) then
+        call ESMF_LogWrite('nwav_elev_spectrum is greater than nk ', ESMF_LOGMSG_INFO)
+        call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      end if
+    end if
+
+    ! Intialize the list of requested output variables for netCDF output.
+    ! This needs to occur after mod_def has been read in w3init since
+    ! some variables are available only if they are defined in the mod_def
+    if (use_historync) then
+      call wav_history_init(stdout)
     end if
 #endif
 
@@ -1537,7 +1582,7 @@ contains
     use w3initmd     , only : w3init
     use w3gdatmd     , only : dtcfl, dtcfli, dtmax, dtmin
     use w3idatmd     , only : inflags1, inflags2
-    use w3odatmd     , only : initfile
+    use w3odatmd     , only : initfile, restart_from_binary
     use wav_shr_mod  , only : casename
     use wav_shr_mod  , only : inst_index, inst_name, inst_suffix
     use wav_shr_mod  , only : wav_coupling_to_cice
@@ -1641,6 +1686,14 @@ contains
     dtcfl_in  = dtcfl
     dtcfli_in = dtcfli
     dtmin_in  = dtmin
+
+    ! Initial and branch runs start from the binary initial-condition file
+    ! (initfile, from the ww3_inparm namelist); continue runs read the netCDF
+    ! restart written by wav_restart_mod. restart_from_binary tells w3init/w3iors
+    ! to read the binary initfile rather than a netCDF restart.
+    if (trim(runtype) /= 'continue' .and. len_trim(initfile) > 0) then
+      restart_from_binary = .true.
+    end if
 
     ! Read the namelist settings in ww3_shel.nml
     call ESMF_LogWrite(trim(subname)//' call read_shel_config', ESMF_LOGMSG_INFO)

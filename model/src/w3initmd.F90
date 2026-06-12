@@ -454,6 +454,7 @@ CONTAINS
 #ifdef W3_PIO
     use wav_restart_mod, only : read_restart
     use w3odatmd,        only : runtype, restart_from_binary, use_restartnc, user_restfname
+    use w3odatmd,        only : use_user_restname, initfile
 #endif
     !/
 #ifdef W3_MPI
@@ -985,6 +986,16 @@ CONTAINS
       call set_user_timestring(time,user_timestring)
       if (restart_from_binary) then
         fname = trim(user_restfname)//trim(user_timestring)
+        if (use_user_restname .and. trim(runtype) /= 'continue') then
+          ! CESM initial and branch runs read the binary initial file (initfile);
+          ! branch runs first try a time-stamped binary restart (matches w3iorsmd)
+          if (trim(runtype) == 'initial') then
+            fname = trim(initfile)
+          else
+            inquire(file=trim(fname), exist=exists)
+            if (.not. exists) fname = trim(initfile)
+          end if
+        end if
       else
         fname = trim(user_restfname)//trim(user_timestring)//'.nc'
       endif
