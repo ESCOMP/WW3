@@ -132,5 +132,7 @@ add_executable(ww3_grid ww3_grid.F90)
 target_link_libraries(ww3_grid PRIVATE wav)
 add_executable(ww3_strt ww3_strt.F90)
 target_link_libraries(ww3_strt PRIVATE wav)
+add_executable(ww3_bounc ww3_bounc.F90)
+target_link_libraries(ww3_bounc PRIVATE wav)
 
 install(TARGETS wav)
