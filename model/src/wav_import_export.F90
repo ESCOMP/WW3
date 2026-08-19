@@ -722,8 +722,7 @@ contains
     ! Local variables
 #ifdef W3_CESMCOUPLED
     real(R8)          :: fillvalue = 1.0e30_R8                 ! special missing value
-    real              :: sww, langmt, lasl, alphal
-    real(r8)          :: laslpj
+    real              :: sww, langmt, lasl, laslpj, alphal
 #else
     real(R8)          :: fillvalue = zero                      ! special missing value
 #endif
