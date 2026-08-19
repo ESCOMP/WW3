@@ -52,7 +52,7 @@ contains
   !> @date 08-02-2024
   subroutine wav_pio_init(gcomp, mpi_comm, stdout, numprocs, rc)
 
-#ifdef CESMCOUPLED
+#ifdef W3_CESMCOUPLED
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
 #endif
     use ESMF         , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_UtilStringUpperCase, ESMF_VM, ESMF_FAILURE
@@ -84,7 +84,7 @@ contains
 
     rc = ESMF_SUCCESS
 
-#ifdef CESMCOUPLED
+#ifdef W3_CESMCOUPLED
     ! The CESM driver registers PIO settings under the gridcomp name (e.g. "WAV");
     ! multi-instance members run under separate drivers with the same gridcomp name.
     call ESMF_GridCompGet(gcomp, name=cvalue, rc=rc)
