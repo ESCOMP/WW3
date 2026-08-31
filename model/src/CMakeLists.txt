@@ -13,6 +13,8 @@ else()
 endif()
 set(CMAKE_Fortran_FLAGS "${FFLAGS} ${CPPDEFS} -I${LIBROOT}/include -I${LIBROOT}/finclude -I${LIBROOT}/nuopc/esmf/${NINST_VALUE}/include")
 
+find_library(NETCDF_Fortran_LIBRARY NAMES netcdff HINTS ${NETCDF_PATH}/lib)
+
 #-------------------------
 # Set ESMF_F90COMPILEPATHS
 #-------------------------
@@ -133,6 +135,6 @@ target_link_libraries(ww3_grid PRIVATE wav)
 add_executable(ww3_strt ww3_strt.F90)
 target_link_libraries(ww3_strt PRIVATE wav)
 add_executable(ww3_bounc ww3_bounc.F90)
-target_link_libraries(ww3_bounc PRIVATE wav)
+target_link_libraries(ww3_bounc PRIVATE wav ${NETCDF_Fortran_LIBRARY})
 
 install(TARGETS wav)
