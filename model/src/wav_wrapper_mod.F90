@@ -17,7 +17,7 @@ module wav_wrapper_mod
 
   real(r8) :: wtime = 0.0
 
-#ifdef CESMCOUPLED
+#ifdef W3_CESMCOUPLED
 contains
   ! Define stub routines that do nothing - they are just here to avoid
   ! having cppdefs in the main program
@@ -34,7 +34,7 @@ contains
   subroutine ufs_file_setLogUnit(filename,nunit,runtimelog)
     character(len=*),  intent(in)  :: filename
     logical,           intent(in)  :: runtimelog
-    integer,           intent(out) :: nunit
+    integer,           intent(out) :: nunit 
   end subroutine ufs_file_setLogUnit
   subroutine ufs_logfhour(msg,hour)
     character(len=*),  intent(in)  :: msg

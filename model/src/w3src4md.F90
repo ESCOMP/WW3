@@ -2318,8 +2318,16 @@ CONTAINS
       END DO
       !
       ! Computes Breaking probability
+      ! NOTE: BTH occasionally goes slightly negative; guard SQRT against it.
+      ! BTH/PB are NSPEC-length arrays, so this must be a whole-array operation
+      ! (a loop over IK1:NK would leave most of PB uninitialized). Where BTH >= 0
+      ! this is identical to the original PB = (MAX(SQRT(BTH)-EPSR,0.))**2.
       !
-      PB = (MAX(SQRT(BTH)-EPSR,0.))**2
+      where (BTH < 0.)
+         PB = 0.
+      elsewhere
+         PB = (MAX(SQRT(BTH)-EPSR,0.))**2
+      end where
       !
       ! Multiplies by 28.16 = 22.0 * 1.6² * 1/2 with
       !  22.0 (Banner & al. 2000, figure 6)

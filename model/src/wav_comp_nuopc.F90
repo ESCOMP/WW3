@@ -49,6 +49,7 @@ module wav_comp_nuopc
   use w3odatmd              , only : use_historync, use_restartnc, restart_from_binary, logfile_is_assigned
   use w3odatmd              , only : time_origin, calendar_name, elapsed_secs
   use wav_shr_mod           , only : casename, inst_suffix, inst_index, unstr_mesh
+  use wav_shr_mod           , only : inst_name
   use wav_wrapper_mod       , only : ufs_settimer, ufs_logtimer, ufs_file_setlogunit, wtime
 #ifndef W3_CESMCOUPLED
   use shr_is_restart_fh_mod , only : init_is_restart_fh, is_restart_fh, is_restart_fh_type
@@ -95,6 +96,12 @@ module wav_comp_nuopc
   integer :: timen(2)                                      !< end time stored as yyyymmdd,hhmmss
   integer :: nu_timer                                      !< simple timer log, unused except by UFS
   logical :: runtimelog = .false.                          !< logical flag for writing runtime log files
+  !
+  character(len=256)  :: history_option = 'never'          !< History option units
+  integer             :: history_n = 1                     !< Number until history interval
+  integer             :: history_ymd = -999                !< History date (YYYYMMDD)
+  logical             :: aux_flds_to_cmeps                 !< Send auxiliary time averaged fields to CMEPS
+
   character(*), parameter :: modName =  "(wav_comp_nuopc)" !< the name of this module
   character(*), parameter :: u_FILE_u = &                  !< a character string for an ESMF log message
        __FILE__
@@ -410,6 +417,7 @@ contains
       inst_suffix = ""
       inst_index=1
     endif
+    inst_name = "WAV"//trim(inst_suffix)
 
     ! Determine wave-ice coupling
     wav_coupling_to_cice = .false.
@@ -438,6 +446,17 @@ contains
     if (isPresent .and. isSet) verboselog=(trim(cvalue)=="true")
     write(logmsg,*) verboselog
     call ESMF_LogWrite('WW3_cap: Verbose WW3 native logging is = '//trim(logmsg), ESMF_LOGMSG_INFO)
+
+    ! Determine if auxiliary fields will be sent to cmeps for use in mediator history output
+    aux_flds_to_cmeps = .false.
+    call NUOPC_CompAttributeGet(gcomp, name='histaux_wav2med_file1_enabled', value=cvalue, isPresent=isPresent, &
+         isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       read(cvalue,*) aux_flds_to_cmeps
+    end if
+    write(logmsg,'(A,l)') trim(subname)//': Wave aux_flds_to_cmeps is ',aux_flds_to_cmeps
+    call ESMF_LogWrite(trim(logmsg), ESMF_LOGMSG_INFO)
 
     !--------------------------------------------------------------------
     ! Set up data structures
@@ -563,7 +582,7 @@ contains
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
     ! Determine time attributes for history output
-    call ESMF_TimeGet( esmfTime, timeString=time_origin, calendar=calendar, rc=rc )
+    call ESMF_TimeGet( startTime, timeString=time_origin, calendar=calendar, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     time_origin = 'seconds since '//time_origin(1:10)//' '//time_origin(12:19)
     !call ESMF_ClockGet(clock, calendar=calendar)
@@ -716,7 +735,7 @@ contains
     end if
 #endif
 
-    call advertise_fields(importState, exportState, flds_scalar_name, rc)
+    call advertise_fields(importState, exportState, flds_scalar_name, aux_flds_to_cmeps, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (root_task) call ufs_logtimer(nu_timer,time0,start_tod,'InitializeAdvertise time: ',runtimelog,wtime)
@@ -818,12 +837,15 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
 #ifdef W3_CESMCOUPLED
+
+      call ESMF_VMGet(vm, mpiCommunicator=localcomm, rc=rc)
+      if (ChkErr(rc,__LINE__,u_FILE_u)) return
+      mpicomm%mpi_val = localcomm
+
     ! Initialize PIO. In CESM, component PIO is set up by the driver between the
     ! advertise and realize phases (PostChildrenAdvertise), so this cannot be done
     ! in InitializeAdvertise. It needs to be done prior to the first history write.
     if (use_restartnc .or. use_historync) then
-      call ESMF_VMGet(vm, mpiCommunicator=localcomm, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
       call wav_pio_init(gcomp, localcomm, stdout, naproc, rc)
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
@@ -836,8 +858,6 @@ contains
 
     time = time0
     call set_shel_io(stdout, mds, ntrace)
-    call ESMF_VMGet(vm, mpiCommunicator=mpicomm%mpi_val, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call waveinit_cesm(gcomp, ntrace, mpicomm, mds, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -933,8 +953,6 @@ contains
           end if
         end if
       end do
-      deallocate(mask_global)
-      deallocate(mask_local)
 
       ! create a global index that includes both sea and land - but put land at the end
       nlnd = (my_lnd_end - my_lnd_start + 1)
@@ -964,13 +982,9 @@ contains
       if (unstr_mesh) then
         call diagnose_mesh(EMesh, size(gindex_sea), 'EMesh', rc=rc)
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
-        deallocate(gindex_sea)
       else
         call diagnose_mesh(EMesh, size(gindex), 'EMesh', rc=rc)
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
-        deallocate(gindex)
-        deallocate(gindex_sea)
-        deallocate(gindex_lnd)
       end if
     end if
 
@@ -1062,10 +1076,6 @@ contains
     real(r8), pointer :: sw_lasl(:)
     real(r8), pointer :: sw_ustokes(:)
     real(r8), pointer :: sw_vstokes(:)
-    real(r8), pointer :: Sw_Hs(:)
-    real(r8), pointer :: Sw_t01(:)
-    real(r8), pointer :: Sw_t0m1(:)
-    real(r8), pointer :: Sw_thm(:)
     real(r8), pointer :: wave_elevation_spectrum(:,:)
     character(len=*),parameter :: subname = '(wav_comp_nuopc:DataInitialize)'
     ! -------------------------------------------------------------------
@@ -1111,26 +1121,6 @@ contains
       call state_getfldptr(exportState, 'Sw_elevation_spectrum', wave_elevation_spectrum, rc=rc)
       if (ChkErr(rc,__LINE__,u_FILE_u)) return
       wave_elevation_spectrum(:,:) = 0.
-    endif
-    if (state_fldchk(exportState, 'Sw_Hs')) then
-      call state_getfldptr(exportState, 'Sw_Hs', Sw_Hs, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
-      Sw_Hs (:) = 0.
-    endif
-    if (state_fldchk(exportState, 'Sw_t01')) then
-      call state_getfldptr(exportState, 'Sw_t01', Sw_t01, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
-      Sw_t01 (:) = 0.
-    endif
-    if (state_fldchk(exportState, 'Sw_t0m1')) then
-      call state_getfldptr(exportState, 'Sw_t0m1', Sw_t0m1, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
-      Sw_t0m1 (:) = 0.
-    endif
-    if (state_fldchk(exportState, 'Sw_thm')) then
-      call state_getfldptr(exportState, 'Sw_thm', Sw_thm, rc=rc)
-      if (ChkErr(rc,__LINE__,u_FILE_u)) return
-      Sw_thm (:) = 0.
     endif
 
     if (.not. unstr_mesh) then
@@ -1298,7 +1288,12 @@ contains
     endif
 
     ! Advance the wave model
-    call w3wave ( 1, odat, timen )
+    ! NOTE: aux_flds_to_cmeps must be passed so that w3wave performs the per-coupling-step
+    ! w3cprt/w3outg refresh of the w3adatmd partition/bulk arrays that the cap time-averages
+    ! and sends to the mediator. Without it, present(aux_flds_to_cmeps) is .false. inside
+    ! w3wave and those arrays are only refreshed on history-write steps, leaving stale values
+    ! sampled on intermediate steps (the daily-averaged Sw_*_avg fields then differ from noresm).
+    call w3wave ( 1, odat, timen, aux_flds_to_cmeps=aux_flds_to_cmeps )
     if(profile_memory) call ESMF_VMLogMemInfo("Exiting  WW3 Run : ")
 
     !------------
@@ -1330,6 +1325,7 @@ contains
     use wav_shel_inp , only : odat
     use wav_shr_mod  , only : dtime_drv
     use nuopc_shr_methods, only : get_minimum_timestep
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1352,9 +1348,6 @@ contains
     integer                  :: stop_n         ! Number until stop interval
     integer                  :: stop_ymd       ! Stop date (YYYYMMDD)
     type(ESMF_ALARM)         :: stop_alarm
-    character(len=256)       :: history_option ! History option units
-    integer                  :: history_n      ! Number until history interval
-    integer                  :: history_ymd    ! History date (YYYYMMDD)
     type(ESMF_ALARM)         :: history_alarm
     character(len=128)       :: name
     integer                  :: alarmcount, dt_cpl
@@ -1584,7 +1577,7 @@ contains
     use w3idatmd     , only : inflags1, inflags2
     use w3odatmd     , only : initfile
     use wav_shr_mod  , only : casename
-    use wav_shr_mod  , only : inst_index, inst_name, inst_suffix
+    use wav_shr_mod  , only : inst_index, inst_suffix
     use wav_shr_mod  , only : wav_coupling_to_cice
     use wav_shel_inp , only : read_shel_config
     use wav_shel_inp , only : npts, odat, iprt, x, y, pnames, prtfrm
@@ -1600,21 +1593,19 @@ contains
     ! local variables
     integer           :: ierr
     integer           :: unitn  ! namelist unit number
-    !integer           :: shrlogunit
     real(r8)          :: dtmax_in  ! Maximum overall time step.
     real(r8)          :: dtmin_in  ! Minimum dynamic time step for source
     real(r8)          :: dtcfl_in  ! Maximum CFL time step X-Y propagation.
     real(r8)          :: dtcfli_in ! Maximum CFL time step X-Y propagation intra-spectral
     integer           :: stdout
-    character(len=*), parameter    :: subname = '(wav_comp_nuopc:wavinit_cesm)'
+    character(len=*), parameter    :: subname = '(wav_comp_nuopc:waveinit_cesm)'
     ! -------------------------------------------------------------------
 
-    namelist /ww3_inparm/ initfile, dtcfl, dtcfli, dtmax, dtmin
+    namelist /ww3_inparm/ initfile, dtcfl, dtcfli, dtmax, dtmin, history_option, history_n
 
     rc = ESMF_SUCCESS
     if (dbug_flag > 5) call ESMF_LogWrite(trim(subname)//' called', ESMF_LOGMSG_INFO)
 
-    inst_name = "WAV"//trim(inst_suffix)
     ! Read namelist (set initfile in w3odatmd)
     if ( root_task ) then
       open (newunit=unitn, file='wav_in'//trim(inst_suffix), status='old')
@@ -1643,6 +1634,10 @@ contains
       write(stdout,'(a, 2x, f10.3)')' dtcfli   = ',dtcfli
       write(stdout,'(a, 2x, f10.3)')' dtmax    = ',dtmax
       write(stdout,'(a, 2x, f10.3)')' dtmin    = ',dtmin
+#ifdef W3_CESMCOUPLED
+      write(stdout,'(a)')' history_option = '//trim(history_option)
+      write(stdout,'(a, 2x, i8)')' history_n = ',history_n
+#endif
       write(stdout,*)
     end if
 
@@ -1677,7 +1672,21 @@ contains
     end if
     call mpi_bcast(dtmin, 1, MPI_INTEGER, 0, mpicomm, ierr)
     if (ierr /= MPI_SUCCESS) then
-      call ESMF_LogWrite(trim(subname)//' error in mpi broadcast for dtmax ',&
+      call ESMF_LogWrite(trim(subname)//' error in mpi broadcast for dtmin ',&
+           ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
+      rc = ESMF_FAILURE
+      return
+    end if
+    call mpi_bcast(history_n, 1, MPI_INTEGER, 0, mpicomm, ierr)
+    if (ierr /= MPI_SUCCESS) then
+      call ESMF_LogWrite(trim(subname)//' error in mpi broadcast for history_n ',&
+           ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
+      rc = ESMF_FAILURE
+      return
+    end if
+    call mpi_bcast(history_option, len(history_option), MPI_CHARACTER, 0, mpicomm, ierr)
+    if (ierr /= MPI_SUCCESS) then
+      call ESMF_LogWrite(trim(subname)//' error in mpi broadcast for history_option ',&
            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
       rc = ESMF_FAILURE
       return
@@ -1727,7 +1736,7 @@ contains
 
     call ESMF_LogWrite(trim(subname)//' call w3init', ESMF_LOGMSG_INFO)
     call w3init ( 1, .false., 'ww3', mds, ntrace, odat, flgrd, flgr2, flgd, flg2, &
-         npts, x, y, pnames, iprt, prtfrm, mpicomm )
+         npts, x, y, pnames, iprt, prtfrm, mpicomm)
 
     ! NOTE: these need to be set again AFTER w3init is run - since these values will be overwritten
     ! by the read of mod_def.ww3
