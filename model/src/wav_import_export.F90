@@ -63,6 +63,12 @@ module wav_import_export
 #else
   logical :: cesmcoupled = .false.                  !< logical defining a non-CESM use case (UWM)
 #endif
+
+  ! Modification to enable both CESM and NorESM to determine their correct
+  ! wind fields at runtime:
+  character(len=10) :: u_wind_fieldname = 'Sa_u10m'
+  character(len=10) :: v_wind_fieldname = 'Sa_v10m'
+  logical           :: wind_resolved = .false.       !< true once wind field names have been resolved by a runtime check
   integer, public    :: nseal_cpl                   !< the number of local sea points on a processor, exclusive
                                                     !! of the ghost points. For non-PDLIB cases, this is nseal
   character(*),parameter :: u_FILE_u = &            !< a character string for an ESMF log message
@@ -203,8 +209,10 @@ contains
     call fldlist_add(fldsToWav_num, fldsToWav, 'So_v'       )
     call fldlist_add(fldsToWav_num, fldsToWav, 'So_t'       )
     call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_tbot'    )
-    call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_u10m'    )
+    call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_u10m'    )   ! 10m winds used by NorESM
     call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_v10m'    )
+    call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_u'       )   ! lowest-level winds currently used by CESM
+    call fldlist_add(fldsToWav_num, fldsToWav, 'Sa_v'       )
     if (cesmcoupled) then
        call fldlist_add(fldsToWav_num, fldsToWav, 'So_bldepth' )
     end if
@@ -429,8 +437,6 @@ contains
     real(r4)                :: global_data(nsea)
     real(r4), allocatable   :: global_data2(:)
     real(r4)                :: def_value
-    character(len=10)       :: uwnd
-    character(len=10)       :: vwnd
     integer                 :: isea
     real(r4), parameter     :: fillv = 9.99e20
     real(r4), allocatable   :: wxdata(:)      ! only needed if merge_import
@@ -519,11 +525,28 @@ contains
       TW0  = time0       ! times for atm wind/temp fields.
       TWN  = timen
 
+      if (.not. wind_resolved) then
+        if (state_fldchk(importState, 'Sa_u10m') .and. state_fldchk(importState, 'Sa_v10m')) then
+          u_wind_fieldname = 'Sa_u10m' ; v_wind_fieldname = 'Sa_v10m'
+        else if (state_fldchk(importState, 'Sa_u') .and. state_fldchk(importState, 'Sa_v')) then
+          u_wind_fieldname = 'Sa_u' ; v_wind_fieldname = 'Sa_v'
+        else
+          call ESMF_LogWrite(trim(subname)//': ERROR: no atmospheric wind is connected to the wave model '// &
+               '(neither Sa_u10m/Sa_v10m nor Sa_u/Sa_v); the atmosphere must export one of these pairs', &
+               ESMF_LOGMSG_ERROR)
+          rc = ESMF_FAILURE
+          return
+        end if
+        call ESMF_LogWrite(trim(subname)//': wave model wind forcing taken from '// &
+             trim(u_wind_fieldname)//'/'//trim(v_wind_fieldname), ESMF_LOGMSG_INFO)
+        wind_resolved = .true.
+      end if
+
       if (merge_import) then
         ! set mask using u-wind field if merge_import; assume all import fields
         ! will have same missing overlap region
         ! import_mask memory will be allocate in set_importmask
-        call set_importmask(importState, clock, 'Sa_u10m', vm, rc)
+        call set_importmask(importState, clock, trim(u_wind_fieldname), vm, rc)
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
         allocate(wxdata(nsea))
         allocate(wydata(nsea))
@@ -542,8 +565,8 @@ contains
       ! atm u wind
       WX0(:,:) = def_value
       WXN(:,:) = def_value
-      if (state_fldchk(importState, 'Sa_u10m')) then
-        call SetGlobalInput(importState, 'Sa_u10m', vm, global_data, rc)
+      if (state_fldchk(importState, trim(u_wind_fieldname))) then
+        call SetGlobalInput(importState, trim(u_wind_fieldname), vm, global_data, rc)
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
         if (merge_import) then
           call FillGlobalInput(global_data, import_mask, wxdata, WX0)
@@ -561,9 +584,9 @@ contains
       ! atm v wind
       WY0(:,:) = def_value
       WYN(:,:) = def_value
-      if (state_fldchk(importState, 'Sa_v10m')) then
+      if (state_fldchk(importState, trim(v_wind_fieldname))) then
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
-        call SetGlobalInput(importState, 'Sa_v10m', vm, global_data, rc)
+        call SetGlobalInput(importState, trim(v_wind_fieldname), vm, global_data, rc)
         if (ChkErr(rc,__LINE__,u_FILE_u)) return
         if (merge_import) then
           call FillGlobalInput(global_data, import_mask, wydata, WY0)
@@ -1237,19 +1260,19 @@ contains
     end if
 
     ! Input zonal wind
-    if (state_fldchk(exportState, 'Sw_u_avg') .and. state_fldchk(importState, 'Sa_u10m')) then
+    if (state_fldchk(exportState, 'Sw_u_avg') .and. state_fldchk(importState, trim(u_wind_fieldname))) then
        call state_getfldptr(exportState, 'Sw_u_avg', dataptr, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, 'Sa_u10m', sa_u, rc=rc)
+       call state_getfldptr(importState, trim(u_wind_fieldname), sa_u, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call accumulate(dataptr, counter_u_avg, accum_u_avg, sec_next, fillvalue, real(sa_u))
     end if
 
     ! Input meridional wind
-    if (state_fldchk(exportState, 'Sw_v_avg') .and. state_fldchk(importState, 'Sa_v10m')) then
+    if (state_fldchk(exportState, 'Sw_v_avg') .and. state_fldchk(importState, trim(v_wind_fieldname))) then
        call state_getfldptr(exportState, 'Sw_v_avg', dataptr, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, 'Sa_v10m', sa_v, rc=rc)
+       call state_getfldptr(importState, trim(v_wind_fieldname), sa_v, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call accumulate(dataptr, counter_v_avg, accum_v_avg, sec_next, fillvalue, real(sa_v))
     end if
